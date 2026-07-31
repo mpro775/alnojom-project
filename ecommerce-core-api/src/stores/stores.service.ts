@@ -820,7 +820,7 @@ export class StoresService {
   }
 
   private isDamagedText(value: string): boolean {
-    return /[\uFFFDØÙ]/.test(value);
+    return /[\uFFFD\u00D8\u00D9]/u.test(value);
   }
 
   private resolveWorkingHours(

@@ -22,13 +22,17 @@ function normalizeOriginHost(value: string): string | null {
   }
 }
 
-function isAllowedOrigin(origin: string | undefined, allowedOrigins: Set<string>): boolean {
+function isAllowedOrigin(origin: string | undefined, allowedOrigins: Set<string>, isProd: boolean): boolean {
   if (!origin) {
     return true;
   }
 
   if (allowedOrigins.has(origin)) {
     return true;
+  }
+
+  if (isProd) {
+    return false;
   }
 
   const hostname = normalizeOriginHost(origin);
@@ -57,9 +61,12 @@ function configureSecurity(
       .map((origin) => origin.trim())
       .filter(Boolean),
   );
+  
+  const isProd = configService.get<string>('NODE_ENV') === 'production';
+  
   app.enableCors({
     origin(origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) {
-      callback(null, isAllowedOrigin(origin, allowedOrigins));
+      callback(null, isAllowedOrigin(origin, allowedOrigins, isProd));
     },
     credentials: true,
     exposedHeaders: ['x-csrf-token'],
