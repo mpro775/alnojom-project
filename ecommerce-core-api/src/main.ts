@@ -37,8 +37,6 @@ function isAllowedOrigin(origin: string | undefined, allowedOrigins: Set<string>
   }
 
   return (
-    hostname === 'your-domain.com' ||
-    hostname.endsWith('.your-domain.com') ||
     hostname === 'localhost' ||
     hostname === '127.0.0.1'
   );

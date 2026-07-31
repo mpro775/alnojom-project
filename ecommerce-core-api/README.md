@@ -1,6 +1,6 @@
 # General Ecommerce API
 
-Backend API for the General Ecommerce Platform.
+Backend API for General Ecommerce.
 
 ## Tech Stack
 

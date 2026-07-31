@@ -34,7 +34,7 @@ interface StaffPanelProps {
   request: MerchantRequester;
 }
 
-const DEFAULT_TEAM_ROLE: TeamRole = 'manager';
+
 
 const PERMISSION_LABELS: Record<string, string> = {
   '*': 'وصول كامل',
@@ -123,11 +123,11 @@ export function StaffPanel({ request }: StaffPanelProps) {
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteFullName, setInviteFullName] = useState('');
-  const [inviteRole, setInviteRole] = useState<TeamRole>(DEFAULT_TEAM_ROLE);
+  const [inviteRole, setInviteRole] = useState<TeamRole>('viewer');
   const [invitePermissions, setInvitePermissions] = useState<string[]>([]);
 
   const [selectedUserId, setSelectedUserId] = useState('');
-  const [editRole, setEditRole] = useState<TeamRole>(DEFAULT_TEAM_ROLE);
+  const [editRole, setEditRole] = useState<TeamRole>('viewer');
   const [editPermissions, setEditPermissions] = useState<string[]>([]);
 
   const rolePresetByCode = useMemo(
@@ -844,7 +844,7 @@ function normalizePermissions(input: string[]): string[] {
 }
 
 function coerceTeamRole(role: StoreRole): TeamRole {
-  return role === 'owner' ? DEFAULT_TEAM_ROLE : role;
+  return role === 'owner' ? 'viewer' : role;
 }
 
 function getRoleLabel(

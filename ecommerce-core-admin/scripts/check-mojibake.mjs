@@ -14,6 +14,7 @@ const suspiciousPatterns = [
   /\u00E2[\u0080-\u00BF]{2}|\u00F0[\u0080-\u00BF]{2,3}/u,
   /\u0637[\u00A1-\u00BF\u0152]/u,
   /\u0638[\u0080-\u00BF\u201A-\u2026\u0679]/u,
+  /[ØÙ]/u,
 ];
 
 const failures = [];

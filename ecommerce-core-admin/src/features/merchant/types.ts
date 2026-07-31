@@ -1,10 +1,12 @@
 export type TeamRole =
-  | 'manager'
-  | 'operations'
-  | 'catalog'
-  | 'support'
-  | 'finance'
-  | 'internal_marketing';
+  | 'general_manager'
+  | 'order_manager'
+  | 'product_manager'
+  | 'inventory_manager'
+  | 'customer_support'
+  | 'marketing_manager'
+  | 'accountant'
+  | 'viewer';
 
 export type StoreRole = 'owner' | TeamRole;
 
@@ -1681,6 +1683,16 @@ export interface LoyaltyLedgerEntry {
 
 export type SupportTicketScope = 'b2b' | 'b2c';
 export type SupportTicketPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export type SupportTicketSource =
+  | 'merchant_portal'
+  | 'customer_portal'
+  | 'system';
+
+export type SupportActorType =
+  | 'customer'
+  | 'store_user'
+  | 'system';
 export type SupportTicketStatus =
   | 'open'
   | 'waiting_customer'
@@ -1692,13 +1704,13 @@ export interface SupportTicketSummary {
   id: string;
   storeId: string;
   scope: SupportTicketScope;
-  source: string;
+  source: SupportTicketSource;
   subject: string;
   description: string | null;
   status: SupportTicketStatus;
   priority: SupportTicketPriority;
   requester: {
-    type: string;
+    type: SupportActorType;
     customerId: string | null;
     storeUserId: string | null;
     label: string | null;
@@ -1727,7 +1739,7 @@ export interface SupportTicketMessage {
   id: string;
   ticketId: string;
   storeId: string;
-  authorType: string;
+  authorType: SupportActorType;
   authorCustomerId: string | null;
   authorStoreUserId: string | null;
   authorName: string | null;
@@ -1744,7 +1756,7 @@ export interface SupportTicketEvent {
   ticketId: string;
   storeId: string;
   eventType: string;
-  actorType: string;
+  actorType: SupportActorType;
   actorCustomerId: string | null;
   actorStoreUserId: string | null;
   actorName: string | null;

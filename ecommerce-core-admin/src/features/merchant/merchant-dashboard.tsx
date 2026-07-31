@@ -173,7 +173,7 @@ export function MerchantDashboard({
 
   const signOut = useCallback(async (): Promise<void> => {
     try {
-      await request('/auth/logout', { method: 'POST' }, { includeStoreHeader: false });
+      await request('/auth/logout', { method: 'POST' });
     } catch {
       // Ignore sign-out network failures and clear session locally.
     }

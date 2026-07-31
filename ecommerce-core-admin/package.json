@@ -2,7 +2,7 @@
     "name": "general-ecommerce-admin",
     "version": "0.1.0",
     "private": true,
-    "description": "General Ecommerce Platform Admin Dashboard",
+    "description": "General Ecommerce Admin Dashboard",
     "type": "module",
     "scripts": {
         "dev": "vite",
@@ -40,14 +40,15 @@
         "stylis-plugin-rtl": "^2.1.1"
     },
     "devDependencies": {
-        "@eslint/js": "^9.19.0",
         "@axe-core/playwright": "^4.10.2",
+        "@eslint/js": "^9.19.0",
+        "@playwright/test": "^1.56.1",
         "@types/leaflet": "^1.9.20",
+        "@types/node": "^26.1.2",
         "@types/react": "^19.1.2",
         "@types/react-dom": "^19.1.2",
         "@types/stylis": "^4.2.7",
         "@vitejs/plugin-react": "^4.4.1",
-        "@playwright/test": "^1.56.1",
         "eslint": "^9.19.0",
         "eslint-config-prettier": "^10.0.1",
         "eslint-plugin-jsx-a11y": "^6.10.2",
