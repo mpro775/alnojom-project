@@ -20,6 +20,8 @@ import {
   type PaymentWithOrder,
 } from './payments.repository';
 import { AffiliatesService } from '../affiliates/affiliates.service';
+import { CHECKOUT_ERROR_CODES, CheckoutDomainException } from '../checkout/checkout.errors';
+import { MetricsService } from '../observability/metrics.service';
 
 export interface PaymentResponse {
   id: string;
@@ -67,6 +69,7 @@ export class PaymentsService {
     private readonly auditService: AuditService,
     private readonly outboxService: OutboxService,
     private readonly affiliatesService: AffiliatesService,
+    private readonly metricsService: MetricsService,
   ) {}
 
   async list(
@@ -110,41 +113,76 @@ export class PaymentsService {
     input: UploadReceiptDto,
     context: RequestContextData,
   ): Promise<PaymentResponse> {
-    const payment = await this.paymentsRepository.findByOrderId(currentUser.storeId, input.orderId);
-    if (!payment) {
-      throw new NotFoundException('Payment not found for this order');
-    }
-
-    if ((payment.payment_method_code ?? payment.method) === 'cod') {
-      throw new BadRequestException('Receipt can only be uploaded for manual transfer payments');
-    }
-
-    if (payment.status !== 'pending' && payment.status !== 'rejected') {
-      throw new BadRequestException('Cannot upload receipt for this payment status');
-    }
-
     const mediaAsset = await this.mediaRepository.findById(currentUser.storeId, input.mediaAssetId);
     if (!mediaAsset) {
       throw new NotFoundException('Media asset not found');
     }
 
-    const updated = await this.paymentsRepository.updateReceipt({
-      paymentId: payment.id,
-      storeId: currentUser.storeId,
-      receiptMediaAssetId: input.mediaAssetId,
-      receiptUrl: mediaAsset.public_url,
+    const outcome = await this.paymentsRepository.withTransaction(async (db) => {
+      const payment = await this.paymentsRepository.findByOrderIdInTransaction(
+        db,
+        currentUser.storeId,
+        input.orderId,
+      );
+      if (!payment) throw new NotFoundException('Payment not found for this order');
+      if ((payment.payment_method_code ?? payment.method) === 'cod') {
+        throw new BadRequestException('Receipt can only be uploaded for manual transfer payments');
+      }
+      if (payment.status === 'under_review' && payment.receipt_media_asset_id === input.mediaAssetId) {
+        return { payment, changed: false };
+      }
+      if (payment.status !== 'pending' && payment.status !== 'rejected') {
+        throw new BadRequestException('Cannot upload receipt for this payment status');
+      }
+      const updated = await this.paymentsRepository.updateReceiptInTransaction(db, {
+        paymentId: payment.id,
+        storeId: currentUser.storeId,
+        receiptMediaAssetId: input.mediaAssetId,
+        receiptUrl: mediaAsset.public_url,
+      });
+      if (!updated) {
+        throw new CheckoutDomainException(
+          CHECKOUT_ERROR_CODES.PAYMENT_TRANSITION_CONFLICT,
+          'Payment receipt was updated concurrently',
+        );
+      }
+      await this.paymentsRepository.insertStatusHistory(db, {
+        storeId: currentUser.storeId,
+        paymentId: payment.id,
+        orderId: payment.order_id,
+        fromStatus: payment.status,
+        toStatus: 'under_review',
+        reviewedBy: null,
+        reviewNote: 'Customer receipt uploaded',
+      });
+      await this.outboxService.enqueueInTransaction(db, {
+        aggregateType: 'payment',
+        aggregateId: payment.id,
+        eventType: 'payment.receipt_uploaded',
+        deduplicationKey: `payment.receipt_uploaded:${payment.id}:${input.mediaAssetId}`,
+        payload: {
+          paymentId: payment.id,
+          orderId: input.orderId,
+          storeId: currentUser.storeId,
+          amount: Number(updated.amount),
+          method: updated.payment_method_code ?? updated.method,
+          receiptUrl: updated.receipt_url ?? updated.payer_receipt_url,
+          uploadedAt: updated.customer_uploaded_at?.toISOString(),
+          status: 'under_review',
+          source: 'payment_receipt_upload',
+        },
+        headers: context.requestId ? { requestId: context.requestId } : {},
+      });
+      return { payment: updated, changed: true };
     });
+    const updated = outcome.payment;
 
-    if (!updated) {
-      throw new BadRequestException('Failed to update payment receipt');
-    }
-
-    await this.auditService.log({
+    if (outcome.changed) await this.auditService.log({
       action: 'payments.receipt_uploaded',
       storeId: currentUser.storeId,
       storeUserId: currentUser.id,
       targetType: 'payment',
-      targetId: payment.id,
+      targetId: updated.id,
       ipAddress: context.ipAddress,
       userAgent: context.userAgent,
       metadata: {
@@ -152,35 +190,6 @@ export class PaymentsService {
         mediaAssetId: input.mediaAssetId,
         requestId: context.requestId,
       },
-    });
-
-    const paymentWithOrder = await this.paymentsRepository.findWithOrderById(
-      currentUser.storeId,
-      payment.id,
-    );
-
-    await this.outboxService.enqueue({
-      aggregateType: 'payment',
-      aggregateId: payment.id,
-      eventType: 'payment.receipt_uploaded',
-      payload: {
-        paymentId: payment.id,
-        orderId: input.orderId,
-        orderCode: paymentWithOrder?.order_code,
-        storeId: currentUser.storeId,
-        amount: Number(updated.amount),
-        currencyCode: paymentWithOrder?.order_currency_code,
-        customerId: paymentWithOrder?.customer_id,
-        method: updated.payment_method_code ?? updated.method,
-        referenceNumber: updated.payer_reference,
-        receiptUrl: updated.receipt_url ?? updated.payer_receipt_url,
-        customerName: paymentWithOrder?.customer_name,
-        customerPhone: paymentWithOrder?.customer_phone,
-        uploadedAt: updated.customer_uploaded_at?.toISOString(),
-        status: 'under_review',
-        source: 'payment_receipt_upload',
-      },
-      headers: context.requestId ? { requestId: context.requestId } : {},
     });
 
     return this.toResponse(updated);
@@ -192,80 +201,94 @@ export class PaymentsService {
     input: UpdatePaymentStatusDto,
     context: RequestContextData,
   ): Promise<PaymentResponse> {
-    const payment = await this.paymentsRepository.findById(currentUser.storeId, paymentId);
-    if (!payment) {
-      throw new NotFoundException('Payment not found');
-    }
-
-    if (!canTransitionPaymentStatus(payment.status, input.status)) {
-      throw new BadRequestException(
-        `Cannot transition payment status from ${payment.status} to ${input.status}`,
+    const outcome = await this.paymentsRepository.withTransaction(async (db) => {
+      const payment = await this.paymentsRepository.findByIdInTransaction(
+        db,
+        currentUser.storeId,
+        paymentId,
       );
-    }
-
-    const updated = await this.paymentsRepository.updateStatus({
-      paymentId: payment.id,
-      storeId: currentUser.storeId,
-      status: input.status,
-      reviewedBy: currentUser.id,
-      reviewNote: input.reviewNote ?? null,
+      if (!payment) throw new NotFoundException('Payment not found');
+      if (payment.status === input.status) return { payment, previousStatus: payment.status, changed: false };
+      if (!canTransitionPaymentStatus(payment.status, input.status)) {
+        this.metricsService.incrementCounter('payment_transition_conflict_total', {
+          store_id: currentUser.storeId,
+        });
+        throw new CheckoutDomainException(
+          CHECKOUT_ERROR_CODES.PAYMENT_TRANSITION_CONFLICT,
+          `Cannot transition payment status from ${payment.status} to ${input.status}`,
+        );
+      }
+      const updated = await this.paymentsRepository.updateStatusInTransaction(db, {
+        paymentId: payment.id,
+        storeId: currentUser.storeId,
+        status: input.status,
+        allowedPreviousStatuses: [payment.status],
+        reviewedBy: currentUser.id,
+        reviewNote: input.reviewNote ?? null,
+      });
+      if (!updated) {
+        const current = await this.paymentsRepository.findByIdInTransaction(
+          db,
+          currentUser.storeId,
+          paymentId,
+        );
+        if (current?.status === input.status) return { payment: current, previousStatus: payment.status, changed: false };
+        throw new CheckoutDomainException(
+          CHECKOUT_ERROR_CODES.PAYMENT_TRANSITION_CONFLICT,
+          'Payment was reviewed concurrently',
+        );
+      }
+      await this.paymentsRepository.insertStatusHistory(db, {
+        storeId: currentUser.storeId,
+        paymentId: payment.id,
+        orderId: payment.order_id,
+        fromStatus: payment.status,
+        toStatus: input.status,
+        reviewedBy: currentUser.id,
+        reviewNote: input.reviewNote ?? null,
+      });
+      await this.outboxService.enqueueInTransaction(db, {
+        aggregateType: 'payment',
+        aggregateId: payment.id,
+        eventType: 'payment.status_changed',
+        deduplicationKey: `payment.status_changed:${payment.id}:${payment.status}:${input.status}`,
+        payload: {
+          paymentId: payment.id,
+          orderId: payment.order_id,
+          storeId: currentUser.storeId,
+          amount: Number(updated.amount),
+          method: updated.payment_method_code ?? updated.method,
+          from: payment.status,
+          to: input.status,
+          source: 'payment_status_update',
+        },
+        headers: context.requestId ? { requestId: context.requestId } : {},
+      });
+      await this.affiliatesService.handlePaymentStatusChangedInTransaction(db, {
+        storeId: currentUser.storeId,
+        orderId: payment.order_id,
+        nextStatus: input.status,
+      });
+      return { payment: updated, previousStatus: payment.status, changed: true };
     });
 
-    if (!updated) {
-      throw new BadRequestException('Failed to update payment status');
-    }
-
-    await this.auditService.log({
+    if (outcome.changed) void this.auditService.log({
       action: 'payments.status_updated',
       storeId: currentUser.storeId,
       storeUserId: currentUser.id,
       targetType: 'payment',
-      targetId: payment.id,
+      targetId: outcome.payment.id,
       ipAddress: context.ipAddress,
       userAgent: context.userAgent,
       metadata: {
-        from: payment.status,
+        from: outcome.previousStatus,
         to: input.status,
         reviewNote: input.reviewNote ?? null,
         requestId: context.requestId,
       },
-    });
+    }).catch(() => undefined);
 
-    const paymentWithOrder = await this.paymentsRepository.findWithOrderById(
-      currentUser.storeId,
-      payment.id,
-    );
-
-    await this.outboxService.enqueue({
-      aggregateType: 'payment',
-      aggregateId: payment.id,
-      eventType: 'payment.status_changed',
-      payload: {
-        paymentId: payment.id,
-        orderId: payment.order_id,
-        orderCode: paymentWithOrder?.order_code,
-        storeId: currentUser.storeId,
-        amount: Number(updated.amount),
-        currencyCode: paymentWithOrder?.order_currency_code,
-        customerId: paymentWithOrder?.customer_id,
-        method: updated.payment_method_code ?? updated.method,
-        referenceNumber: updated.payer_reference,
-        customerName: paymentWithOrder?.customer_name,
-        customerPhone: paymentWithOrder?.customer_phone,
-        from: payment.status,
-        to: input.status,
-        source: 'payment_status_update',
-      },
-      headers: context.requestId ? { requestId: context.requestId } : {},
-    });
-
-    await this.affiliatesService.handlePaymentStatusChanged({
-      storeId: currentUser.storeId,
-      orderId: payment.order_id,
-      nextStatus: input.status,
-    });
-
-    return this.toResponse(updated);
+    return this.toResponse(outcome.payment);
   }
 
   async markCollected(
@@ -273,22 +296,66 @@ export class PaymentsService {
     paymentId: string,
     context: RequestContextData,
   ): Promise<PaymentResponse> {
-    const payment = await this.paymentsRepository.findById(currentUser.storeId, paymentId);
-    if (!payment) {
-      throw new NotFoundException('Payment not found');
-    }
-    if ((payment.payment_method_code ?? payment.method) !== 'cod' || payment.status !== 'pending') {
-      throw new BadRequestException('Only pending COD payments can be marked as collected');
-    }
-    const updated = await this.paymentsRepository.markCollected({
-      paymentId,
-      storeId: currentUser.storeId,
-      reviewedBy: currentUser.id,
+    const outcome = await this.paymentsRepository.withTransaction(async (db) => {
+      const payment = await this.paymentsRepository.findByIdInTransaction(
+        db,
+        currentUser.storeId,
+        paymentId,
+      );
+      if (!payment) throw new NotFoundException('Payment not found');
+      if ((payment.payment_method_code ?? payment.method) !== 'cod') {
+        throw new BadRequestException('Only COD payments can be marked as collected');
+      }
+      if (payment.status === 'approved') return { payment, previousStatus: payment.status, changed: false };
+      if (payment.status !== 'pending') {
+        throw new BadRequestException('Only pending COD payments can be marked as collected');
+      }
+      const updated = await this.paymentsRepository.markCollectedInTransaction(db, {
+        paymentId,
+        storeId: currentUser.storeId,
+        reviewedBy: currentUser.id,
+      });
+      if (!updated) {
+        throw new CheckoutDomainException(
+          CHECKOUT_ERROR_CODES.PAYMENT_TRANSITION_CONFLICT,
+          'COD payment was collected concurrently',
+        );
+      }
+      await this.paymentsRepository.insertStatusHistory(db, {
+        storeId: currentUser.storeId,
+        paymentId,
+        orderId: payment.order_id,
+        fromStatus: payment.status,
+        toStatus: 'approved',
+        reviewedBy: currentUser.id,
+        reviewNote: 'COD collected',
+      });
+      await this.outboxService.enqueueInTransaction(db, {
+        aggregateType: 'payment',
+        aggregateId: paymentId,
+        eventType: 'payment.status_changed',
+        deduplicationKey: `payment.status_changed:${paymentId}:pending:approved`,
+        payload: {
+          paymentId,
+          orderId: payment.order_id,
+          storeId: currentUser.storeId,
+          amount: Number(updated.amount),
+          method: updated.payment_method_code ?? updated.method,
+          from: payment.status,
+          to: 'approved',
+          source: 'cod_collected',
+        },
+        headers: context.requestId ? { requestId: context.requestId } : {},
+      });
+      await this.affiliatesService.handlePaymentStatusChangedInTransaction(db, {
+        storeId: currentUser.storeId,
+        orderId: payment.order_id,
+        nextStatus: 'approved',
+      });
+      return { payment: updated, previousStatus: payment.status, changed: true };
     });
-    if (!updated) {
-      throw new BadRequestException('Failed to mark payment as collected');
-    }
-    await this.auditService.log({
+    const updated = outcome.payment;
+    if (outcome.changed) await this.auditService.log({
       action: 'payments.cod_collected',
       storeId: currentUser.storeId,
       storeUserId: currentUser.id,
@@ -296,38 +363,7 @@ export class PaymentsService {
       targetId: paymentId,
       ipAddress: context.ipAddress,
       userAgent: context.userAgent,
-      metadata: { orderId: payment.order_id, requestId: context.requestId },
-    });
-    const paymentWithOrder = await this.paymentsRepository.findWithOrderById(
-      currentUser.storeId,
-      payment.id,
-    );
-
-    await this.outboxService.enqueue({
-      aggregateType: 'payment',
-      aggregateId: paymentId,
-      eventType: 'payment.status_changed',
-      payload: {
-        paymentId,
-        orderId: payment.order_id,
-        orderCode: paymentWithOrder?.order_code,
-        storeId: currentUser.storeId,
-        amount: Number(updated.amount),
-        currencyCode: paymentWithOrder?.order_currency_code,
-        customerId: paymentWithOrder?.customer_id,
-        method: updated.payment_method_code ?? updated.method,
-        customerName: paymentWithOrder?.customer_name,
-        customerPhone: paymentWithOrder?.customer_phone,
-        from: payment.status,
-        to: 'approved',
-        source: 'cod_collected',
-      },
-      headers: context.requestId ? { requestId: context.requestId } : {},
-    });
-    await this.affiliatesService.handlePaymentStatusChanged({
-      storeId: currentUser.storeId,
-      orderId: payment.order_id,
-      nextStatus: 'approved',
+      metadata: { orderId: updated.order_id, requestId: context.requestId },
     });
     return this.toResponse(updated);
   }

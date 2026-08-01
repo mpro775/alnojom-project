@@ -36,6 +36,8 @@ export interface CartRecord {
   status: 'open' | 'checked_out' | 'abandoned';
   currency_code: string;
   exchange_rate_yer_per_unit: string;
+  expires_at: Date;
+  checked_out_order_id: string | null;
 }
 
 export interface CartItemSnapshot {
@@ -53,6 +55,10 @@ export interface CartItemSnapshot {
   product_weight: string | null;
   stock_quantity: number;
   product_title: string;
+  variant_title: string;
+  product_image: string | null;
+  product_status: string;
+  product_is_visible: boolean;
   sku: string;
   attributes: Record<string, string>;
 }
@@ -85,6 +91,7 @@ export interface OrderRecord {
   shipping_address: Record<string, unknown>;
   created_at: Date;
   updated_at: Date;
+  cart_id: string | null;
 }
 
 export interface OrderListRow extends OrderRecord {
@@ -157,6 +164,16 @@ export interface OrderItemRecord {
   unit_price_yer: string;
   line_total_yer: string;
   attributes: Record<string, string>;
+  product_name: string;
+  variant_name: string;
+  discount_amount: string;
+  final_unit_price: string;
+  currency_code: string;
+  product_image: string | null;
+  attributes_snapshot: Record<string, string>;
+  tax_snapshot: Record<string, unknown>;
+  line_subtotal: string;
+  line_discount: string;
 }
 
 export interface OrderStatusHistoryRecord {
@@ -191,10 +208,11 @@ interface CreateOrderInput {
   pointsDiscountAmountYER: number;
   note: string | null;
   shippingAddress: Record<string, unknown>;
+  cartId?: string | null;
 }
 
 const ORDER_RETURNING_FIELDS =
-  'id, store_id, customer_id, order_code, status, subtotal, total, shipping_zone_id, shipping_method_id, shipping_method_snapshot, shipping_fee, discount_total, points_redeemed, points_discount_amount, points_earned, coupon_code, currency_code, exchange_rate_yer_per_unit, subtotal_yer, total_yer, shipping_fee_yer, discount_total_yer, points_discount_amount_yer, note, shipping_address, created_at, updated_at';
+  'id, store_id, customer_id, order_code, status, subtotal, total, shipping_zone_id, shipping_method_id, shipping_method_snapshot, shipping_fee, discount_total, points_redeemed, points_discount_amount, points_earned, coupon_code, currency_code, exchange_rate_yer_per_unit, subtotal_yer, total_yer, shipping_fee_yer, discount_total_yer, points_discount_amount_yer, note, shipping_address, cart_id, created_at, updated_at';
 
 const INSERT_ORDER_QUERY = `
   INSERT INTO orders (
@@ -220,8 +238,9 @@ const INSERT_ORDER_QUERY = `
     discount_total_yer,
     points_discount_amount_yer,
     note,
-    shipping_address
-  ) VALUES ($1, $2, $3, $4, 'new', $5, $6, $7, $8, $9::jsonb, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22::jsonb)
+    shipping_address,
+    cart_id
+  ) VALUES ($1, $2, $3, $4, 'new', $5, $6, $7, $8, $9::jsonb, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22::jsonb, $23)
   RETURNING ${ORDER_RETURNING_FIELDS}
 `;
 
@@ -279,13 +298,30 @@ export class OrdersRepository {
   async findOpenCartById(storeId: string, cartId: string): Promise<CartRecord | null> {
     const result = await this.databaseService.db.query<CartRecord>(
       `
-        SELECT id, store_id, status, currency_code, exchange_rate_yer_per_unit
+        SELECT id, store_id, status, currency_code, exchange_rate_yer_per_unit,
+               expires_at, checked_out_order_id
         FROM carts
         WHERE store_id = $1
           AND id = $2
           AND status IN ('open', 'abandoned')
         LIMIT 1
       `,
+      [storeId, cartId],
+    );
+    return result.rows[0] ?? null;
+  }
+
+  async lockCartForCheckout(
+    db: Queryable,
+    storeId: string,
+    cartId: string,
+  ): Promise<CartRecord | null> {
+    const result = await db.query<CartRecord>(
+      `SELECT id, store_id, status, currency_code, exchange_rate_yer_per_unit,
+              expires_at, checked_out_order_id
+       FROM carts
+       WHERE store_id = $1 AND id = $2
+       FOR UPDATE`,
       [storeId, cartId],
     );
     return result.rows[0] ?? null;
@@ -300,7 +336,8 @@ export class OrdersRepository {
       `
         INSERT INTO carts (id, store_id, status, currency_code, exchange_rate_yer_per_unit)
         VALUES ($1, $2, 'open', $3, $4)
-        RETURNING id, store_id, status, currency_code, exchange_rate_yer_per_unit
+        RETURNING id, store_id, status, currency_code, exchange_rate_yer_per_unit,
+                  expires_at, checked_out_order_id
       `,
       [uuidv4(), storeId, currencyCode, exchangeRateYerPerUnit],
     );
@@ -351,7 +388,24 @@ export class OrdersRepository {
   }
 
   async listCartItems(storeId: string, cartId: string): Promise<CartItemSnapshot[]> {
-    const result = await this.databaseService.db.query<CartItemSnapshot>(
+    return this.listCartItemsWithExecutor(this.databaseService.db, storeId, cartId, false);
+  }
+
+  async listCartItemsInTransaction(
+    db: Queryable,
+    storeId: string,
+    cartId: string,
+  ): Promise<CartItemSnapshot[]> {
+    return this.listCartItemsWithExecutor(db, storeId, cartId, true);
+  }
+
+  private async listCartItemsWithExecutor(
+    db: Queryable,
+    storeId: string,
+    cartId: string,
+    lock: boolean,
+  ): Promise<CartItemSnapshot[]> {
+    const result = await db.query<CartItemSnapshot>(
       `
         SELECT
           ci.id AS cart_item_id,
@@ -360,6 +414,8 @@ export class OrdersRepository {
           p.category_id,
           p.product_type,
           p.stock_unlimited,
+          p.status AS product_status,
+          p.is_visible AS product_is_visible,
           ci.variant_id,
           ci.quantity,
           ci.unit_price,
@@ -368,14 +424,25 @@ export class OrdersRepository {
           p.weight AS product_weight,
           pv.stock_quantity,
           p.title AS product_title,
+          pv.title AS variant_title,
           pv.sku,
-          pv.attributes
+          pv.attributes,
+          image.public_url AS product_image
         FROM cart_items ci
         INNER JOIN product_variants pv ON pv.id = ci.variant_id
         INNER JOIN products p ON p.id = ci.product_id
+        LEFT JOIN LATERAL (
+          SELECT ma.public_url
+          FROM product_images pi
+          INNER JOIN media_assets ma ON ma.id = pi.media_asset_id
+          WHERE pi.product_id = p.id
+          ORDER BY pi.is_primary DESC, pi.sort_order ASC, pi.created_at ASC
+          LIMIT 1
+        ) image ON TRUE
         WHERE ci.store_id = $1
           AND ci.cart_id = $2
         ORDER BY ci.created_at ASC
+        ${lock ? 'FOR UPDATE OF ci, pv, p' : ''}
       `,
       [storeId, cartId],
     );
@@ -398,7 +465,8 @@ export class OrdersRepository {
         WHERE store_id = $1
           AND id = $2
           AND status IN ('open', 'abandoned')
-        RETURNING id, store_id, status, currency_code, exchange_rate_yer_per_unit
+        RETURNING id, store_id, status, currency_code, exchange_rate_yer_per_unit,
+                  expires_at, checked_out_order_id
       `,
       [input.storeId, input.cartId, input.currencyCode, input.exchangeRateYerPerUnit],
     );
@@ -690,6 +758,7 @@ export class OrdersRepository {
       input.pointsDiscountAmountYER,
       input.note,
       JSON.stringify(input.shippingAddress),
+      input.cartId ?? null,
     ]);
     return result.rows[0] as OrderRecord;
   }
@@ -702,6 +771,7 @@ export class OrdersRepository {
       productId: string;
       variantId: string;
       title: string;
+      variantName: string;
       sku: string;
       unitPrice: number;
       unitPriceYER: number;
@@ -709,6 +779,12 @@ export class OrdersRepository {
       lineTotal: number;
       lineTotalYER: number;
       attributes: Record<string, string>;
+      currencyCode: string;
+      productImage: string | null;
+      discountAmount: number;
+      finalUnitPrice: number;
+      lineSubtotal: number;
+      lineDiscount: number;
     },
   ): Promise<void> {
     await db.query(
@@ -726,8 +802,21 @@ export class OrdersRepository {
           quantity,
           line_total,
           line_total_yer,
-          attributes
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::jsonb)
+          attributes,
+          product_name,
+          variant_name,
+          discount_amount,
+          final_unit_price,
+          currency_code,
+          product_image,
+          attributes_snapshot,
+          tax_snapshot,
+          line_subtotal,
+          line_discount
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::jsonb,
+          $6, $14, $15, $16, $17, $18, $13::jsonb, '{}'::jsonb, $19, $20
+        )
       `,
       [
         uuidv4(),
@@ -743,6 +832,13 @@ export class OrdersRepository {
         input.lineTotal,
         input.lineTotalYER,
         JSON.stringify(input.attributes),
+        input.variantName,
+        input.discountAmount,
+        input.finalUnitPrice,
+        input.currencyCode,
+        input.productImage,
+        input.lineSubtotal,
+        input.lineDiscount,
       ],
     );
   }
@@ -766,16 +862,43 @@ export class OrdersRepository {
     );
   }
 
-  async markCartCheckedOut(db: Queryable, cartId: string): Promise<void> {
-    await db.query(
+  async markCartCheckedOut(
+    db: Queryable,
+    storeId: string,
+    cartId: string,
+    orderId: string,
+  ): Promise<boolean> {
+    const result = await db.query(
       `
         UPDATE carts
         SET status = 'checked_out',
+            checked_out_order_id = $3,
             updated_at = NOW()
-        WHERE id = $1
+        WHERE store_id = $1 AND id = $2 AND status IN ('open', 'abandoned')
       `,
-      [cartId],
+      [storeId, cartId, orderId],
     );
+    return (result.rowCount ?? 0) === 1;
+  }
+
+  async updateCartCurrencyInTransaction(
+    db: Queryable,
+    input: {
+      storeId: string;
+      cartId: string;
+      currencyCode: string;
+      exchangeRateYerPerUnit: number;
+    },
+  ): Promise<CartRecord | null> {
+    const result = await db.query<CartRecord>(
+      `UPDATE carts
+       SET currency_code = $3, exchange_rate_yer_per_unit = $4, updated_at = NOW()
+       WHERE store_id = $1 AND id = $2 AND status IN ('open', 'abandoned')
+       RETURNING id, store_id, status, currency_code, exchange_rate_yer_per_unit,
+                 expires_at, checked_out_order_id`,
+      [input.storeId, input.cartId, input.currencyCode, input.exchangeRateYerPerUnit],
+    );
+    return result.rows[0] ?? null;
   }
 
   async insertOrderStatusHistory(
@@ -1050,7 +1173,10 @@ export class OrdersRepository {
   async listOrderItems(orderId: string): Promise<OrderItemRecord[]> {
     const result = await this.databaseService.db.query<OrderItemRecord>(
       `
-        SELECT id, order_id, product_id, variant_id, title, sku, unit_price, quantity, line_total, attributes
+        SELECT id, order_id, product_id, variant_id, title, sku, unit_price, quantity,
+               line_total, attributes, product_name, variant_name, discount_amount,
+               final_unit_price, currency_code, product_image, attributes_snapshot,
+               tax_snapshot, line_subtotal, line_discount
         FROM order_items
         WHERE order_id = $1
         ORDER BY created_at ASC
@@ -1067,7 +1193,10 @@ export class OrdersRepository {
 
     const result = await this.databaseService.db.query<OrderItemRecord>(
       `
-        SELECT id, order_id, product_id, variant_id, title, sku, unit_price, quantity, line_total, attributes
+        SELECT id, order_id, product_id, variant_id, title, sku, unit_price, quantity,
+               line_total, attributes, product_name, variant_name, discount_amount,
+               final_unit_price, currency_code, product_image, attributes_snapshot,
+               tax_snapshot, line_subtotal, line_discount
         FROM order_items
         WHERE order_id = ANY($1::uuid[])
         ORDER BY created_at ASC

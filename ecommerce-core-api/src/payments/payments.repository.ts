@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { DatabaseService } from '../database/database.service';
 import type { PaymentMethod, PaymentStatus } from './constants/payment.constants';
+import type { QueryExecutor } from '../database/query-executor';
 
 export interface PaymentRecord {
   id: string;
@@ -67,6 +68,21 @@ const PAYMENT_SELECT_FIELDS_PREFIXED = `
 export class PaymentsRepository {
   constructor(private readonly databaseService: DatabaseService) {}
 
+  async withTransaction<T>(callback: (db: QueryExecutor) => Promise<T>): Promise<T> {
+    const client = await this.databaseService.db.connect();
+    try {
+      await client.query('BEGIN');
+      const result = await callback(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async findByOrderId(storeId: string, orderId: string): Promise<PaymentRecord | null> {
     const result = await this.databaseService.db.query<PaymentRecord>(
       `
@@ -89,6 +105,32 @@ export class PaymentsRepository {
         LIMIT 1
       `,
       [storeId, paymentId],
+    );
+    return result.rows[0] ?? null;
+  }
+
+  async findByIdInTransaction(
+    db: QueryExecutor,
+    storeId: string,
+    paymentId: string,
+  ): Promise<PaymentRecord | null> {
+    const result = await db.query<PaymentRecord>(
+      `SELECT ${PAYMENT_SELECT_FIELDS} FROM payments
+       WHERE store_id = $1 AND id = $2 LIMIT 1`,
+      [storeId, paymentId],
+    );
+    return result.rows[0] ?? null;
+  }
+
+  async findByOrderIdInTransaction(
+    db: QueryExecutor,
+    storeId: string,
+    orderId: string,
+  ): Promise<PaymentRecord | null> {
+    const result = await db.query<PaymentRecord>(
+      `SELECT ${PAYMENT_SELECT_FIELDS} FROM payments
+       WHERE store_id = $1 AND order_id = $2 LIMIT 1`,
+      [storeId, orderId],
     );
     return result.rows[0] ?? null;
   }
@@ -153,13 +195,13 @@ export class PaymentsRepository {
     return result.rows;
   }
 
-  async updateReceipt(input: {
+  async updateReceiptInTransaction(db: QueryExecutor, input: {
     paymentId: string;
     storeId: string;
     receiptMediaAssetId: string;
     receiptUrl: string;
   }): Promise<PaymentRecord | null> {
-    const result = await this.databaseService.db.query<PaymentRecord>(
+    const result = await db.query<PaymentRecord>(
       `
         UPDATE payments
         SET receipt_media_asset_id = $3,
@@ -169,40 +211,67 @@ export class PaymentsRepository {
             customer_uploaded_at = NOW(),
             customer_submitted_at = COALESCE(customer_submitted_at, NOW()),
             status = 'under_review',
+            status_version = status_version + 1,
             updated_at = NOW()
         WHERE id = $1
           AND store_id = $2
           AND method <> 'cod'
+          AND status = ANY($5::text[])
         RETURNING ${PAYMENT_SELECT_FIELDS}
       `,
-      [input.paymentId, input.storeId, input.receiptMediaAssetId, input.receiptUrl],
+      [input.paymentId, input.storeId, input.receiptMediaAssetId, input.receiptUrl,
+       ['pending', 'rejected']],
     );
     return result.rows[0] ?? null;
   }
 
-  async updateStatus(input: {
-    paymentId: string;
-    storeId: string;
-    status: PaymentStatus;
-    reviewedBy: string | null;
-    reviewNote: string | null;
-  }): Promise<PaymentRecord | null> {
-    const reviewedAt = input.status === 'approved' || input.status === 'rejected' ? 'NOW()' : null;
-    const result = await this.databaseService.db.query<PaymentRecord>(
-      `
-        UPDATE payments
-        SET status = $3,
-            reviewed_by = COALESCE($4, reviewed_by),
-            review_note = COALESCE($5, review_note),
-            reviewed_at = COALESCE(${reviewedAt ? 'NOW()' : 'NULL'}, reviewed_at),
-            updated_at = NOW()
-        WHERE id = $1
-          AND store_id = $2
-        RETURNING ${PAYMENT_SELECT_FIELDS}
-      `,
-      [input.paymentId, input.storeId, input.status, input.reviewedBy, input.reviewNote],
+  async updateStatusInTransaction(
+    db: QueryExecutor,
+    input: {
+      paymentId: string;
+      storeId: string;
+      status: PaymentStatus;
+      allowedPreviousStatuses: PaymentStatus[];
+      reviewedBy: string | null;
+      reviewNote: string | null;
+    },
+  ): Promise<PaymentRecord | null> {
+    const result = await db.query<PaymentRecord>(
+      `UPDATE payments
+       SET status = $3, reviewed_by = COALESCE($5, reviewed_by),
+           review_note = COALESCE($6, review_note),
+           reviewed_at = CASE WHEN $3 IN ('approved', 'rejected') THEN NOW() ELSE reviewed_at END,
+           status_version = status_version + 1, updated_at = NOW()
+       WHERE id = $1 AND store_id = $2 AND status = ANY($4::text[])
+       RETURNING ${PAYMENT_SELECT_FIELDS}`,
+      [input.paymentId, input.storeId, input.status, input.allowedPreviousStatuses,
+       input.reviewedBy, input.reviewNote],
     );
     return result.rows[0] ?? null;
+  }
+
+  async insertStatusHistory(
+    db: QueryExecutor,
+    input: {
+      storeId: string;
+      paymentId: string;
+      orderId: string;
+      fromStatus: PaymentStatus;
+      toStatus: PaymentStatus;
+      reviewedBy: string | null;
+      reviewNote: string | null;
+    },
+  ): Promise<void> {
+    await db.query(
+      `INSERT INTO payment_status_history (
+         id, store_id, payment_id, order_id, from_status, to_status,
+         reviewed_by, review_note, business_key
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       ON CONFLICT (store_id, business_key) DO NOTHING`,
+      [uuidv4(), input.storeId, input.paymentId, input.orderId, input.fromStatus,
+       input.toStatus, input.reviewedBy, input.reviewNote,
+       `payment:${input.paymentId}:${input.fromStatus}:${input.toStatus}`],
+    );
   }
 
   async create(input: {
@@ -229,18 +298,19 @@ export class PaymentsRepository {
     return result.rows[0]!;
   }
 
-  async markCollected(input: {
+  async markCollectedInTransaction(db: QueryExecutor, input: {
     paymentId: string;
     storeId: string;
     reviewedBy: string;
   }): Promise<PaymentRecord | null> {
-    const result = await this.databaseService.db.query<PaymentRecord>(
+    const result = await db.query<PaymentRecord>(
       `
         UPDATE payments
         SET status = 'approved',
             reviewed_by = $3,
             reviewed_at = NOW(),
             review_note = COALESCE(review_note, 'COD collected'),
+            status_version = status_version + 1,
             updated_at = NOW()
         WHERE id = $1
           AND store_id = $2

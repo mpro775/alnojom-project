@@ -417,7 +417,7 @@ export class MediaService {
     asset: MediaAssetRecord,
     context: RequestContextData,
   ): Promise<void> {
-    await this.outboxService.enqueue({
+    await this.outboxService.enqueueStandalone({
       aggregateType: 'media_asset',
       aggregateId: asset.id,
       eventType: 'media.uploaded',

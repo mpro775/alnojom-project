@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
 import { AppModule } from '../app.module';
 import { OutboxService } from '../messaging/outbox.service';
+import { WebhooksService } from '../webhooks/webhooks.service';
 
 const logger = new Logger('OutboxWorker');
 const pollIntervalMs = 2000;
@@ -13,9 +14,15 @@ async function bootstrap(): Promise<void> {
   });
 
   const outboxService = app.get(OutboxService);
+  const webhooksService = app.get(WebhooksService);
+
+  await outboxService.recoverStaleProcessing();
 
   const run = async (): Promise<void> => {
-    const publishedCount = await outboxService.publishPending(100);
+    const publishedCount = await outboxService.publishPending(
+      Number(process.env.OUTBOX_BATCH_SIZE ?? 100),
+      (event) => webhooksService.processOutboxEvent(event),
+    );
     if (publishedCount > 0) {
       logger.log(`Published outbox messages: ${publishedCount}`);
     }

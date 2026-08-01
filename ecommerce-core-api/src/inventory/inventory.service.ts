@@ -121,11 +121,28 @@ export class InventoryService {
   }
 
   async releaseExpiredReservationsInTransaction(db: Queryable, storeId: string): Promise<number> {
-    return this.inventoryRepository.releaseExpiredReservations(db, storeId);
+    const released = await this.inventoryRepository.releaseExpiredReservations(db, storeId);
+    if (released > 0) {
+      await this.outboxService.enqueueInTransaction(db, {
+        aggregateType: 'inventory-reservations',
+        aggregateId: storeId,
+        eventType: 'inventory.reservation_expired',
+        payload: { storeId, count: released, source: 'inventory_reservations_worker' },
+      });
+    }
+    return released;
   }
 
   async getAvailableStock(storeId: string, variantId: string): Promise<number | null> {
     return this.inventoryRepository.findVariantAvailableQuantity(storeId, variantId);
+  }
+
+  async getAvailableStockInTransaction(
+    db: Queryable,
+    storeId: string,
+    variantId: string,
+  ): Promise<number | null> {
+    return this.inventoryRepository.findVariantAvailableQuantityInTransaction(db, storeId, variantId);
   }
 
   async syncVariantStockFromWarehouses(
@@ -147,15 +164,12 @@ export class InventoryService {
     },
   ): Promise<void> {
     for (const item of input.items) {
-      const warehouseId = await this.resolvePreferredWarehouse(db, input.storeId, item.variantId);
-
       const reserveInput: {
         storeId: string;
         orderId: string;
         variantId: string;
         quantity: number;
         expiresAt: Date;
-        warehouseId?: string;
         metadata?: Record<string, unknown>;
       } = {
         storeId: input.storeId,
@@ -163,7 +177,6 @@ export class InventoryService {
         variantId: item.variantId,
         quantity: item.quantity,
         expiresAt: input.expiresAt,
-        warehouseId: warehouseId ?? undefined,
       };
 
       if (input.metadata) {
@@ -175,51 +188,7 @@ export class InventoryService {
       if (!reserved) {
         throw new UnprocessableEntityException(`Insufficient reservable stock for SKU ${item.sku}`);
       }
-
-      if (warehouseId) {
-        await this.inventoryRepository.updateWarehouseInventoryReservedQuantity(db, {
-          storeId: input.storeId,
-          variantId: item.variantId,
-          warehouseId,
-          reservedQuantity: await this.getWarehouseReservedDelta(
-            db,
-            input.storeId,
-            item.variantId,
-            warehouseId,
-            item.quantity,
-          ),
-        });
-      }
     }
-  }
-
-  private async resolvePreferredWarehouse(
-    db: Queryable,
-    storeId: string,
-    variantId: string,
-  ): Promise<string | null> {
-    const stocks = await this.inventoryRepository.listVariantWarehouseStocks(storeId, variantId);
-    if (stocks.length === 0) {
-      return null;
-    }
-    const preferred = stocks[0];
-    return preferred.warehouse_id;
-  }
-
-  private async getWarehouseReservedDelta(
-    db: Queryable,
-    storeId: string,
-    variantId: string,
-    warehouseId: string,
-    additionalReserved: number,
-  ): Promise<number> {
-    const stocks = await this.inventoryRepository.listVariantWarehouseStocksForUpdate(
-      db,
-      storeId,
-      variantId,
-    );
-    const current = stocks.find((s) => s.warehouse_id === warehouseId);
-    return (current?.reserved_quantity ?? 0) + additionalReserved;
   }
 
   async confirmReservedOrderItems(
@@ -246,32 +215,6 @@ export class InventoryService {
           `Reservation missing or expired for SKU ${item.sku}`,
         );
       }
-
-      const warehousePlan = await this.applyWarehouseStockDelta(db, {
-        storeId: input.storeId,
-        variantId: item.variantId,
-        quantityDelta: -item.quantity,
-        lowStockThreshold: 0,
-        sku: item.sku,
-      });
-
-      await this.inventoryRepository.createMovement(db, {
-        storeId: input.storeId,
-        variantId: item.variantId,
-        orderId: input.orderId,
-        movementType: 'sale',
-        qtyDelta: -item.quantity,
-        note: 'Stock deducted on order confirmation',
-        metadata: { source: 'order.status.confirmed', warehousePlan },
-        createdBy: input.actorId,
-        warehouseId: warehousePlan.length > 0 ? warehousePlan[0].warehouseId : null,
-      });
-
-      await this.inventoryRepository.syncVariantStockFromWarehouses(
-        db,
-        input.storeId,
-        item.variantId,
-      );
 
       const snapshotAfter = await this.inventoryRepository.findVariantInventorySnapshot(
         db,
@@ -379,7 +322,16 @@ export class InventoryService {
     db: Queryable,
     input: { storeId: string; orderId: string; reason: string },
   ): Promise<void> {
-    await this.inventoryRepository.releaseOrderReservations(db, input);
+    const released = await this.inventoryRepository.releaseOrderReservations(db, input);
+    if (released > 0) {
+      await this.outboxService.enqueueInTransaction(db, {
+        aggregateType: 'order',
+        aggregateId: input.orderId,
+        eventType: 'inventory.reservation_released',
+        deduplicationKey: `inventory.reservation_released:${input.orderId}:${input.reason}`,
+        payload: { ...input, released },
+      });
+    }
   }
 
   async restockOrderItems(
@@ -657,7 +609,7 @@ export class InventoryService {
     }
 
     for (const signal of dedupedSignals.values()) {
-      await this.outboxService.enqueue({
+      await this.outboxService.enqueueStandalone({
         aggregateType: 'inventory',
         aggregateId: signal.variantId,
         eventType: signal.stockQuantity <= 0 ? 'inventory.out_of_stock' : 'inventory.low_stock',
@@ -686,7 +638,7 @@ export class InventoryService {
     }
 
     for (const signal of dedupedSignals.values()) {
-      await this.outboxService.enqueue({
+      await this.outboxService.enqueueStandalone({
         aggregateType: 'inventory',
         aggregateId: signal.variantId,
         eventType: 'inventory.back_in_stock',

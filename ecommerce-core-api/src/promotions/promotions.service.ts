@@ -19,6 +19,8 @@ import type { ListPromotionsQueryDto } from './dto/list-promotions-query.dto';
 import type { UpdateCouponDto } from './dto/update-coupon.dto';
 import type { UpdateOfferDto } from './dto/update-offer.dto';
 import { PromotionsRepository, type CouponRecord, type OfferRecord } from './promotions.repository';
+import { CHECKOUT_ERROR_CODES, CheckoutDomainException } from '../checkout/checkout.errors';
+import { OutboxService } from '../messaging/outbox.service';
 
 export interface CouponResponse {
   id: string;
@@ -34,6 +36,13 @@ export interface CouponResponse {
   maxUses: number | null;
   usedCount: number;
   isActive: boolean;
+  perCustomerLimit: number | null;
+  maximumDiscount: number | null;
+  currencyCode: string | null;
+  includedProductIds: string[];
+  excludedProductIds: string[];
+  includedCategoryIds: string[];
+  excludedCategoryIds: string[];
 }
 
 export interface OfferResponse {
@@ -82,6 +91,7 @@ export class PromotionsService {
     private readonly auditService: AuditService,
     private readonly webhooksService: WebhooksService,
     private readonly advancedOffersService: AdvancedOffersService,
+    private readonly outboxService: OutboxService,
   ) {}
 
   async createCoupon(
@@ -113,6 +123,13 @@ export class PromotionsService {
       startsAt: input.startsAt ? new Date(input.startsAt) : null,
       endsAt: input.endsAt ? new Date(input.endsAt) : null,
       maxUses: input.maxUses ?? null,
+      perCustomerLimit: input.perCustomerLimit ?? null,
+      maximumDiscount: input.maximumDiscount ?? null,
+      currencyCode: input.currencyCode?.trim().toUpperCase() ?? null,
+      includedProductIds: input.includedProductIds ?? [],
+      excludedProductIds: input.excludedProductIds ?? [],
+      includedCategoryIds: input.includedCategoryIds ?? [],
+      excludedCategoryIds: input.excludedCategoryIds ?? [],
     });
 
     await this.log('promotions.coupon_created', currentUser, coupon.id, context);
@@ -247,6 +264,7 @@ export class PromotionsService {
   async computeCheckoutDiscount(
     storeId: string,
     input: PromotionComputationInput,
+    db?: Parameters<PromotionsRepository['findCouponByCodeForCheckout']>[0],
   ): Promise<PromotionComputationResult> {
     const productIds = [...new Set(input.items.map((item) => item.product_id))];
     const [offers, inlineProductOffers] = await Promise.all([
@@ -308,14 +326,17 @@ export class PromotionsService {
     const normalizedCouponCode = input.couponCode?.trim();
 
     const coupon = normalizedCouponCode
-      ? await this.promotionsRepository.findCouponByCode(
-          storeId,
-          normalizedCouponCode.toUpperCase(),
-        )
+      ? db
+        ? await this.promotionsRepository.findCouponByCodeForCheckout(
+            db, storeId, normalizedCouponCode.toUpperCase(),
+          )
+        : await this.promotionsRepository.findCouponByCode(
+            storeId, normalizedCouponCode.toUpperCase(),
+          )
       : null;
 
     if (normalizedCouponCode && !coupon) {
-      throw new NotFoundException('Coupon not found');
+      throw new CheckoutDomainException(CHECKOUT_ERROR_CODES.COUPON_INVALID, 'Coupon not found');
     }
 
     let couponDiscount = 0;
@@ -329,6 +350,9 @@ export class PromotionsService {
         coupon.discount_type,
         input.subtotal - offerDiscount,
       );
+      if (coupon.maximum_discount !== null) {
+        couponDiscount = Math.min(couponDiscount, Number(coupon.maximum_discount));
+      }
       couponId = coupon.id;
       couponCode = coupon.code;
     }
@@ -359,6 +383,82 @@ export class PromotionsService {
     if (!success) {
       throw new BadRequestException('Coupon usage limit reached');
     }
+  }
+
+  async consumeCouponInTransaction(
+    db: {
+      query: <T = unknown>(
+        queryText: string,
+        values?: unknown[],
+      ) => Promise<{ rows: T[]; rowCount: number | null }>;
+    },
+    input: {
+      storeId: string;
+      couponId: string;
+      orderId: string;
+      customerId: string | null;
+      discountAmount: number;
+      currencyCode: string;
+      subtotal: number;
+      productIds: string[];
+      categoryIds: string[];
+    },
+  ): Promise<void> {
+    try {
+      const usage = await this.promotionsRepository.consumeCoupon(db, input);
+      await this.outboxService.enqueueInTransaction(db, {
+        aggregateType: 'coupon-usage',
+        aggregateId: usage.id,
+        eventType: 'coupon.consumed',
+        deduplicationKey: `coupon.consumed:${usage.id}`,
+        payload: {
+          storeId: input.storeId,
+          orderId: input.orderId,
+          couponId: input.couponId,
+          couponCode: usage.code,
+          discountAmount: input.discountAmount,
+          currencyCode: input.currencyCode,
+        },
+      });
+    } catch (error) {
+      const code = error instanceof Error ? error.message : 'COUPON_INVALID';
+      if (code === 'COUPON_USAGE_LIMIT_REACHED') {
+        throw new CheckoutDomainException(
+          CHECKOUT_ERROR_CODES.COUPON_USAGE_LIMIT_REACHED,
+          'Coupon usage limit reached',
+        );
+      }
+      if (code === 'COUPON_CUSTOMER_LIMIT_REACHED') {
+        throw new CheckoutDomainException(
+          CHECKOUT_ERROR_CODES.COUPON_CUSTOMER_LIMIT_REACHED,
+          'Customer coupon usage limit reached',
+        );
+      }
+      if (code === 'COUPON_EXPIRED') {
+        throw new CheckoutDomainException(
+          CHECKOUT_ERROR_CODES.COUPON_EXPIRED,
+          'Coupon has expired',
+        );
+      }
+      throw new CheckoutDomainException(CHECKOUT_ERROR_CODES.COUPON_INVALID, 'Coupon is invalid');
+    }
+  }
+
+  async reverseCouponInTransaction(
+    db: Parameters<PromotionsRepository['reverseCouponUsage']>[0],
+    input: { storeId: string; orderId: string; reason: string },
+  ): Promise<boolean> {
+    const reversed = await this.promotionsRepository.reverseCouponUsage(db, input);
+    if (reversed) {
+      await this.outboxService.enqueueInTransaction(db, {
+        aggregateType: 'order',
+        aggregateId: input.orderId,
+        eventType: 'coupon.reversed',
+        deduplicationKey: `coupon.reversed:${input.orderId}`,
+        payload: input,
+      });
+    }
+    return reversed;
   }
 
   private validateDiscountType(discountType: string): void {
@@ -427,6 +527,13 @@ export class PromotionsService {
     isActive: boolean;
     affiliateId: string | null;
     isFreeShipping: boolean;
+    perCustomerLimit: number | null;
+    maximumDiscount: number | null;
+    currencyCode: string | null;
+    includedProductIds: string[];
+    excludedProductIds: string[];
+    includedCategoryIds: string[];
+    excludedCategoryIds: string[];
   }> {
     const code = this.resolveCouponCode(input.code, existing.code);
     await this.assertCouponCodeAvailable(storeId, couponId, code, existing.code);
@@ -452,6 +559,17 @@ export class PromotionsService {
       isActive: input.isActive ?? existing.is_active,
       affiliateId,
       isFreeShipping: input.isFreeShipping ?? existing.is_free_shipping,
+      perCustomerLimit: input.perCustomerLimit === undefined
+        ? existing.per_customer_limit : input.perCustomerLimit,
+      maximumDiscount: input.maximumDiscount === undefined
+        ? existing.maximum_discount === null ? null : Number(existing.maximum_discount)
+        : input.maximumDiscount,
+      currencyCode: input.currencyCode === undefined
+        ? existing.currency_code : input.currencyCode?.trim().toUpperCase() ?? null,
+      includedProductIds: input.includedProductIds ?? existing.included_product_ids,
+      excludedProductIds: input.excludedProductIds ?? existing.excluded_product_ids,
+      includedCategoryIds: input.includedCategoryIds ?? existing.included_category_ids,
+      excludedCategoryIds: input.excludedCategoryIds ?? existing.excluded_category_ids,
     };
   }
 
@@ -554,19 +672,25 @@ export class PromotionsService {
 
   private assertCouponUsable(coupon: CouponRecord, subtotal: number, now: Date): void {
     if (!coupon.is_active) {
-      throw new BadRequestException('Coupon is not active');
+      throw new CheckoutDomainException(CHECKOUT_ERROR_CODES.COUPON_INVALID, 'Coupon is not active');
     }
     if (coupon.starts_at && coupon.starts_at.getTime() > now.getTime()) {
-      throw new BadRequestException('Coupon not started yet');
+      throw new CheckoutDomainException(CHECKOUT_ERROR_CODES.COUPON_INVALID, 'Coupon not started yet');
     }
     if (coupon.ends_at && coupon.ends_at.getTime() < now.getTime()) {
-      throw new BadRequestException('Coupon expired');
+      throw new CheckoutDomainException(CHECKOUT_ERROR_CODES.COUPON_EXPIRED, 'Coupon expired');
     }
     if (coupon.max_uses !== null && coupon.used_count >= coupon.max_uses) {
-      throw new BadRequestException('Coupon usage limit reached');
+      throw new CheckoutDomainException(
+        CHECKOUT_ERROR_CODES.COUPON_USAGE_LIMIT_REACHED,
+        'Coupon usage limit reached',
+      );
     }
     if (subtotal < Number(coupon.min_order_amount)) {
-      throw new BadRequestException('Order does not meet coupon minimum amount');
+      throw new CheckoutDomainException(
+        CHECKOUT_ERROR_CODES.COUPON_INVALID,
+        'Order does not meet coupon minimum amount',
+      );
     }
   }
 
@@ -603,6 +727,13 @@ export class PromotionsService {
       maxUses: row.max_uses,
       usedCount: row.used_count,
       isActive: row.is_active,
+      perCustomerLimit: row.per_customer_limit,
+      maximumDiscount: row.maximum_discount === null ? null : Number(row.maximum_discount),
+      currencyCode: row.currency_code,
+      includedProductIds: row.included_product_ids,
+      excludedProductIds: row.excluded_product_ids,
+      includedCategoryIds: row.included_category_ids,
+      excludedCategoryIds: row.excluded_category_ids,
     };
   }
 

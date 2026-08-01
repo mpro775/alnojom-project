@@ -3,6 +3,7 @@ import { AttributesModule } from '../attributes/attributes.module';
 import { CategoriesModule } from '../categories/categories.module';
 import { CustomersModule } from '../customers/customers.module';
 import { CurrencyModule } from '../currency/currency.module';
+import { CheckoutModule } from '../checkout/checkout.module';
 import { FiltersModule } from '../filters/filters.module';
 import { IdempotencyModule } from '../idempotency/idempotency.module';
 import { InventoryModule } from '../inventory/inventory.module';
@@ -43,6 +44,7 @@ import { StorefrontService } from './storefront.service';
     IdempotencyModule,
     SeoModule,
     CurrencyModule,
+    CheckoutModule,
     forwardRef(() => CustomersModule),
   ],
   controllers: [StorefrontController, PublicStoreController],

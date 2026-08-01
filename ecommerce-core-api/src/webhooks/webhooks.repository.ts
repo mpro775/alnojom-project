@@ -32,6 +32,7 @@ export interface WebhookDeliveryRecord {
   next_retry_at: Date | null;
   error_message: string | null;
   created_at: Date;
+  source_outbox_id?: string | null;
 }
 
 export interface WebhookDeliveryWithEndpointRecord extends WebhookDeliveryRecord {
@@ -216,6 +217,30 @@ export class WebhooksRepository {
     );
 
     return result.rows[0] as WebhookDeliveryRecord;
+  }
+
+  async createDeliveryFromOutbox(input: {
+    sourceOutboxId: string;
+    storeId: string;
+    endpointId: string;
+    eventType: string;
+    payload: Record<string, unknown>;
+    signature: string;
+    requestHeaders: Record<string, unknown>;
+  }): Promise<WebhookDeliveryRecord | null> {
+    const result = await this.databaseService.db.query<WebhookDeliveryRecord>(
+      `INSERT INTO webhook_deliveries (
+         id, store_id, endpoint_id, event_type, payload, signature, request_headers,
+         attempt_number, source_outbox_id
+       ) VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7::jsonb, 1, $8)
+       ON CONFLICT (endpoint_id, source_outbox_id) WHERE source_outbox_id IS NOT NULL DO NOTHING
+       RETURNING id, store_id, endpoint_id, event_type, payload, signature, request_headers,
+                 response_status, response_body, response_headers, attempt_number, delivered_at,
+                 next_retry_at, error_message, created_at, source_outbox_id`,
+      [uuidv4(), input.storeId, input.endpointId, input.eventType, JSON.stringify(input.payload),
+       input.signature, JSON.stringify(input.requestHeaders), input.sourceOutboxId],
+    );
+    return result.rows[0] ?? null;
   }
 
   async markDeliverySuccess(input: {

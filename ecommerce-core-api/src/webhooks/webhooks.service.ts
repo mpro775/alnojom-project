@@ -15,6 +15,7 @@ import type { TriggerWebhookEventDto } from './dto/trigger-webhook-event.dto';
 import type { UpdateWebhookEndpointDto } from './dto/update-webhook-endpoint.dto';
 import { WEBHOOK_EVENTS, type WebhookEventType } from './constants/webhook-events.constants';
 import { WebhooksRepository, type WebhookDeliveryWithEndpointRecord } from './webhooks.repository';
+import type { ClaimedOutboxEvent } from '../messaging/outbox.service';
 
 export interface WebhookEndpointResponse {
   id: string;
@@ -226,6 +227,48 @@ export class WebhooksService {
     }
 
     return endpoints.length;
+  }
+
+  async processOutboxEvent(event: ClaimedOutboxEvent): Promise<void> {
+    if (!WEBHOOK_EVENTS.includes(event.event_type as WebhookEventType)) return;
+    const storeId = typeof event.payload.storeId === 'string' ? event.payload.storeId : null;
+    if (!storeId) return;
+    const endpoints = await this.webhooksRepository.listActiveEndpointsForEvent(
+      storeId,
+      event.event_type,
+    );
+    for (const endpoint of endpoints) {
+      const payload = {
+        id: event.id,
+        eventType: event.event_type,
+        timestamp: event.created_at.toISOString(),
+        data: event.payload,
+        storeId,
+      };
+      const signed = this.webhookSigningService.signPayload(payload, endpoint.secret_key);
+      const headerNames = this.webhookSigningService.getSignatureHeaders();
+      const requestHeaders = {
+        'content-type': 'application/json',
+        [headerNames.signature]: signed.signature,
+        [headerNames.timestamp]: signed.timestamp,
+        'x-outbox-id': event.id,
+      };
+      const delivery = await this.webhooksRepository.createDeliveryFromOutbox({
+        sourceOutboxId: event.id,
+        storeId,
+        endpointId: endpoint.id,
+        eventType: event.event_type,
+        payload,
+        signature: signed.signature,
+        requestHeaders,
+      });
+      if (!delivery) continue;
+      await this.sendDeliveryAttempt({
+        ...delivery,
+        endpoint_url: endpoint.url,
+        endpoint_secret_key: endpoint.secret_key,
+      }, 1);
+    }
   }
 
   private buildPayload(

@@ -321,7 +321,8 @@ export class PaymentMethodsRepository {
       payerReceiptUrl: string | null;
       payerNote: string | null;
     },
-  ): Promise<void> {
+  ): Promise<string> {
+    const paymentId = uuidv4();
     await db.query(
       `
         INSERT INTO payments (
@@ -342,7 +343,7 @@ export class PaymentMethodsRepository {
         )
       `,
       [
-        uuidv4(),
+        paymentId,
         input.storeId,
         input.orderId,
         input.snapshot.methodCode,
@@ -366,5 +367,6 @@ export class PaymentMethodsRepository {
         input.status === 'under_review' ? new Date() : null,
       ],
     );
+    return paymentId;
   }
 }

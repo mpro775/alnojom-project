@@ -335,7 +335,7 @@ export class OrdersService {
       metadata: { requestId: context.requestId },
     });
 
-    await this.outboxService.enqueue({
+    await this.outboxService.enqueueStandalone({
       aggregateType: 'order',
       aggregateId: orderId,
       eventType: 'order.created',
@@ -557,7 +557,7 @@ export class OrdersService {
       },
     });
 
-    await this.outboxService.enqueue({
+    await this.outboxService.enqueueStandalone({
       aggregateType: 'order',
       aggregateId: orderId,
       eventType: 'order.updated',
@@ -1216,6 +1216,7 @@ export class OrdersService {
         productId: line.productId,
         variantId: line.variantId,
         title: line.title,
+        variantName: '',
         sku: line.sku,
         unitPrice: line.unitPrice,
         unitPriceYER: line.unitPrice,
@@ -1223,6 +1224,12 @@ export class OrdersService {
         lineTotal: line.lineTotal,
         lineTotalYER: line.lineTotal,
         attributes: line.attributes,
+        currencyCode: 'YER',
+        productImage: null,
+        discountAmount: 0,
+        finalUnitPrice: line.unitPrice,
+        lineSubtotal: line.lineTotal,
+        lineDiscount: 0,
       });
     }
   }
@@ -1250,7 +1257,7 @@ export class OrdersService {
       },
     });
 
-    await this.outboxService.enqueue({
+    await this.outboxService.enqueueStandalone({
       aggregateType: 'order',
       aggregateId: order.id,
       eventType: 'order.status.changed',
@@ -1322,9 +1329,19 @@ export class OrdersService {
       productId: item.product_id,
       variantId: item.variant_id,
       title: item.title,
+      productName: item.product_name,
+      variantName: item.variant_name,
       sku: item.sku,
       unitPrice: Number(item.unit_price),
+      finalUnitPrice: Number(item.final_unit_price),
+      discountAmount: Number(item.discount_amount),
+      currencyCode: item.currency_code,
+      productImage: item.product_image,
+      attributes: item.attributes_snapshot,
+      tax: item.tax_snapshot,
       quantity: item.quantity,
+      lineSubtotal: Number(item.line_subtotal),
+      lineDiscount: Number(item.line_discount),
       lineTotal: Number(item.line_total),
     };
   }

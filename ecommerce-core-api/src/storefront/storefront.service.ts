@@ -11,7 +11,8 @@ import { CustomerEngagementService } from '../customers/customer-engagement.serv
 import { CustomersService } from '../customers/customers.service';
 import { AbandonedCartsService } from '../customers/abandoned-carts.service';
 import { FiltersService, type StorefrontSmartFilter } from '../filters/filters.service';
-import { IdempotencyService } from '../idempotency/idempotency.service';
+import { CheckoutOrchestratorService } from '../checkout/checkout-orchestrator.service';
+import { CHECKOUT_ERROR_CODES, CheckoutDomainException } from '../checkout/checkout.errors';
 import { InventoryService } from '../inventory/inventory.service';
 import { OutboxService } from '../messaging/outbox.service';
 import {
@@ -23,6 +24,7 @@ import {
 import { MediaRepository } from '../media/media.repository';
 import {
   OrdersRepository,
+  type CartRecord,
   type CartItemSnapshot,
   type OrderRecord,
   type OrderStatusHistoryRecord,
@@ -269,7 +271,7 @@ export class StorefrontService {
     private readonly storeResolverService: StoreResolverService,
     private readonly categoriesRepository: CategoriesRepository,
     private readonly filtersService: FiltersService,
-    private readonly idempotencyService: IdempotencyService,
+    private readonly checkoutOrchestrator: CheckoutOrchestratorService,
     private readonly inventoryService: InventoryService,
     private readonly productsRepository: ProductsRepository,
     private readonly ordersRepository: OrdersRepository,
@@ -724,6 +726,13 @@ export class StorefrontService {
     idempotencyKey?: string,
   ): Promise<CheckoutResponse> {
     const store = await this.storeResolverService.resolve(request);
+    if (!idempotencyKey) {
+      throw new CheckoutDomainException(
+        CHECKOUT_ERROR_CODES.IDEMPOTENCY_KEY_REQUIRED,
+        'Idempotency-Key header is required',
+        400,
+      );
+    }
 
     await this.storefrontTrackingService.trackEvent(request, {
       storeId: store.id,
@@ -734,95 +743,70 @@ export class StorefrontService {
         hasCoupon: Boolean(input.couponCode?.trim()),
         hasRestockToken: Boolean(input.restockToken?.trim()),
       },
-    });
+    }).catch(() => undefined);
 
-    if (idempotencyKey) {
-      const cachedResult = await this.idempotencyService.checkOrPrepare({
-        storeId: store.id,
-        key: idempotencyKey,
-        requestBody: input,
-      });
-
-      if (cachedResult.isCached && cachedResult.record) {
-        return cachedResult.record.response as unknown as CheckoutResponse;
-      }
-    }
-
-    const checkoutData = await this.prepareCheckoutData(store.id, input, request);
-    const orderId = uuidv4();
-    const orderCode = this.generateOrderCode();
-
-    const order = await this.executeCheckoutTransaction(
-      store.id,
-      input,
-      checkoutData,
-      orderId,
-      orderCode,
-    );
-
-    await this.abandonedCartsService.attachRecoveredCheckout({
+    const result = await this.checkoutOrchestrator.execute({
       storeId: store.id,
-      cartId: input.cartId,
-      orderId: order.id,
+      actorId: await this.resolveCustomerIdFromAccessToken(store.id, input.customerAccessToken),
+      idempotencyKey,
+      payload: input,
+      work: async ({ db }) => {
+        const cart = await this.ordersRepository.lockCartForCheckout(db, store.id, input.cartId);
+        if (!cart) {
+          throw new CheckoutDomainException(
+            CHECKOUT_ERROR_CODES.CART_NOT_FOUND,
+            'Cart was not found',
+            404,
+          );
+        }
+        if (cart.checked_out_order_id || cart.status === 'checked_out') {
+          throw new CheckoutDomainException(
+            CHECKOUT_ERROR_CODES.CART_ALREADY_CHECKED_OUT,
+            'Cart has already been checked out',
+          );
+        }
+        if (!['open', 'abandoned'].includes(cart.status)) {
+          throw new CheckoutDomainException(CHECKOUT_ERROR_CODES.CART_NOT_OPEN, 'Cart is not open');
+        }
+        if (cart.expires_at <= new Date()) {
+          throw new CheckoutDomainException(CHECKOUT_ERROR_CODES.CART_EXPIRED, 'Cart has expired');
+        }
+
+        const checkoutData = await this.prepareCheckoutData(store.id, input, request, {
+          db,
+          lockedCart: cart,
+        });
+        const order = await this.persistCheckoutTransaction(
+          db,
+          store.id,
+          input,
+          checkoutData,
+          uuidv4(),
+          this.generateOrderCode(),
+        );
+        await this.attachCheckoutConversionsInTransaction(db, store.id, input, order);
+        await this.publishOrderCreated(db, order, store.id, request);
+        const response = this.mapCheckoutResponse(order);
+        return {
+          status: 200,
+          body: response as unknown as Record<string, unknown>,
+          orderId: order.id,
+        };
+      },
     });
+    const response = result.body as unknown as CheckoutResponse;
 
-    const restockToken = input.restockToken?.trim();
-    if (restockToken && order.customer_id) {
-      await this.customerEngagementService.attachRestockConversion({
-        token: restockToken,
-        storeId: store.id,
-        customerId: order.customer_id,
-        orderId: order.id,
-        amount: Number(order.total),
-      });
-    }
-
-    await this.publishOrderCreated(order, store.id);
-    await this.webhooksService.dispatchEvent(store.id, 'order.created', {
-      orderId: order.id,
-      orderCode: order.order_code,
-      status: order.status,
-      total: Number(order.total),
-      currencyCode: order.currency_code,
-    });
-    const response = this.mapCheckoutResponse(order);
-
-    await this.storefrontTrackingService.trackEvent(request, {
+    if (!result.replayed) await this.storefrontTrackingService.trackEvent(request, {
       storeId: store.id,
       eventType: 'checkout_complete',
       cartId: input.cartId,
-      orderId: order.id,
+      orderId: response.orderId,
       metadata: {
         paymentMethod: input.paymentMethod,
         total: response.total,
         currencyCode: response.currencyCode,
       },
-    });
-
-    if (checkoutData.promotion.couponCode) {
-      await this.storefrontTrackingService.trackEvent(request, {
-        storeId: store.id,
-        eventType: 'coupon_apply',
-        cartId: input.cartId,
-        orderId: order.id,
-        metadata: {
-          couponCode: checkoutData.promotion.couponCode,
-          discountTotal: checkoutData.promotion.totalDiscount,
-          total: response.total,
-          currencyCode: response.currencyCode,
-        },
-      });
-    }
-
-    if (idempotencyKey) {
-      await this.idempotencyService.storeResponse(
-        store.id,
-        idempotencyKey,
-        input,
-        response as unknown as Record<string, unknown>,
-        order.id,
-      );
-    }
+    }).catch(() => undefined);
 
     return response;
   }
@@ -1508,11 +1492,18 @@ export class StorefrontService {
     cartId: string,
     currency: ResolvedCurrency,
     items: CartItemSnapshot[],
+    db?: QueryRunner,
   ): Promise<StorefrontCartResponse> {
-    const variantOverrides = await this.currencyService.listVariantOverrides(
-      this.readStoreIdFromCartItems(items),
-      items.map((item) => item.variant_id),
-    );
+    const variantOverrides = db
+      ? await this.currencyService.listVariantOverridesInTransaction(
+          db,
+          this.readStoreIdFromCartItems(items),
+          items.map((item) => item.variant_id),
+        )
+      : await this.currencyService.listVariantOverrides(
+          this.readStoreIdFromCartItems(items),
+          items.map((item) => item.variant_id),
+        );
     const mappedItems = items.map((item) =>
       this.mapCartItem(item, currency, variantOverrides.get(item.variant_id) ?? []),
     );
@@ -1554,7 +1545,11 @@ export class StorefrontService {
     return items[0]?.store_id ?? '';
   }
 
-  private async validateCartStock(storeId: string, items: CartItemSnapshot[]): Promise<void> {
+  private async validateCartStock(
+    storeId: string,
+    items: CartItemSnapshot[],
+    db?: QueryRunner,
+  ): Promise<void> {
     for (const item of items) {
       if (item.product_type === 'bundled') {
         await this.ensureBundleComponentsStock(storeId, item.product_id, item.quantity);
@@ -1562,12 +1557,15 @@ export class StorefrontService {
       }
 
       if (!item.stock_unlimited) {
-        const availableStock = await this.inventoryService.getAvailableStock(
-          storeId,
-          item.variant_id,
-        );
+        const availableStock = db
+          ? await this.inventoryService.getAvailableStockInTransaction(db, storeId, item.variant_id)
+          : await this.inventoryService.getAvailableStock(storeId, item.variant_id);
         if (availableStock === null || item.quantity > availableStock) {
-          throw new UnprocessableEntityException(`Variant ${item.sku} is out of stock`);
+          throw new CheckoutDomainException(
+            CHECKOUT_ERROR_CODES.INSUFFICIENT_STOCK,
+            `Variant ${item.sku} is out of stock`,
+            422,
+          );
         }
       }
     }
@@ -1657,35 +1655,61 @@ export class StorefrontService {
       | 'currencyCode'
     >,
     request: Request,
-    options: { requirePaymentMethod?: boolean } = {},
+    options: {
+      requirePaymentMethod?: boolean;
+      db?: QueryRunner;
+      lockedCart?: CartRecord;
+    } = {},
   ): Promise<CheckoutData> {
     const requirePaymentMethod = options.requirePaymentMethod ?? true;
-    const cart = await this.ordersRepository.findOpenCartById(storeId, input.cartId);
+    const db = options.db;
+    const cart = options.lockedCart ?? await this.ordersRepository.findOpenCartById(storeId, input.cartId);
     if (!cart) {
       throw new BadRequestException('السلة غير موجودة أو تم تحويلها إلى طلب سابقاً.');
     }
-    const currency = await this.currencyService.resolveStoreCurrency(
-      storeId,
-      input.currencyCode ?? cart.currency_code,
-    );
-    await this.ordersRepository.updateCartCurrency({
-      storeId,
-      cartId: cart.id,
-      currencyCode: currency.currencyCode,
-      exchangeRateYerPerUnit: currency.yerPerUnit,
-    });
+    const currency = db
+      ? await this.currencyService.resolveStoreCurrencyInTransaction(
+          db,
+          storeId,
+          input.currencyCode ?? cart.currency_code,
+        )
+      : await this.currencyService.resolveStoreCurrency(
+          storeId,
+          input.currencyCode ?? cart.currency_code,
+        );
+    if (db) {
+      await this.ordersRepository.updateCartCurrencyInTransaction(db, {
+        storeId, cartId: cart.id, currencyCode: currency.currencyCode,
+        exchangeRateYerPerUnit: currency.yerPerUnit,
+      });
+    } else {
+      await this.ordersRepository.updateCartCurrency({
+        storeId, cartId: cart.id, currencyCode: currency.currencyCode,
+        exchangeRateYerPerUnit: currency.yerPerUnit,
+      });
+    }
     cart.currency_code = currency.currencyCode;
     cart.exchange_rate_yer_per_unit = String(currency.yerPerUnit);
 
-    const items = await this.ordersRepository.listCartItems(storeId, cart.id);
+    const items = db
+      ? await this.ordersRepository.listCartItemsInTransaction(db, storeId, cart.id)
+      : await this.ordersRepository.listCartItems(storeId, cart.id);
     if (items.length === 0) {
-      throw new BadRequestException('Cart is empty');
+      throw new CheckoutDomainException(CHECKOUT_ERROR_CODES.CART_EMPTY, 'Cart is empty', 400);
     }
-
-    await this.inventoryService.releaseExpiredReservations(storeId);
-    await this.validateCartStock(storeId, items);
+    for (const item of items) {
+      if (item.product_status !== 'active' || !item.product_is_visible) {
+        throw new CheckoutDomainException(
+          CHECKOUT_ERROR_CODES.PRODUCT_NOT_PURCHASABLE,
+          `Product for SKU ${item.sku} is not purchasable`,
+        );
+      }
+    }
+    if (db) await this.inventoryService.releaseExpiredReservationsInTransaction(db, storeId);
+    else await this.inventoryService.releaseExpiredReservations(storeId);
+    await this.validateCartStock(storeId, items, db);
     const inventoryReservationItems = await this.mapCheckoutItemsToInventoryInput(storeId, items);
-    const mappedCart = await this.mapCart(cart.id, currency, items);
+    const mappedCart = await this.mapCart(cart.id, currency, items, db);
     const subtotal = mappedCart.subtotal;
     const subtotalYER = mappedCart.subtotalYER;
     const itemsYER = items.map((item) => ({
@@ -1731,6 +1755,7 @@ export class StorefrontService {
       promotionYER = await this.promotionsService.computeCheckoutDiscount(
         storeId,
         this.buildPromotionInput(subtotalYER, itemsYER, input.couponCode),
+        db,
       );
     }
 
@@ -1769,6 +1794,16 @@ export class StorefrontService {
     let pointsRedeemed = 0;
     let pointsDiscountAmountYER = 0;
     if (requestedPointsToRedeem > 0 && customerIdForLoyalty) {
+      if (db) {
+        const lockedDecision = await this.loyaltyService.previewRedemptionInTransaction(db, {
+          storeId,
+          customerId: customerIdForLoyalty,
+          requestedPoints: requestedPointsToRedeem,
+          totalBeforeDiscount: baseTotalYER,
+        });
+        pointsRedeemed = lockedDecision.pointsRedeemed;
+        pointsDiscountAmountYER = lockedDecision.discountAmount;
+      } else {
       const settings = await this.loyaltyService.getSettingsByStoreId(storeId);
       if (!settings.isEnabled) {
         throw new BadRequestException('Loyalty program is disabled');
@@ -1794,6 +1829,7 @@ export class StorefrontService {
       });
       pointsRedeemed = estimate.pointsRedeemed;
       pointsDiscountAmountYER = estimate.discountAmount;
+      }
     }
     const pointsDiscountAmount = this.currencyService.convertFromYer(
       pointsDiscountAmountYER,
@@ -1839,6 +1875,9 @@ export class StorefrontService {
         throw new BadRequestException('صورة الإيصال غير صحيحة أو غير موجودة.');
       }
       payerReceiptUrl = receipt.public_url;
+    }
+    if (paymentSnapshot?.requiresReceipt && !paymentSnapshot.isReceiptOptional && !payerReceiptUrl) {
+      throw new BadRequestException('A payment receipt is required for the selected payment method');
     }
 
     return {
@@ -1939,10 +1978,21 @@ export class StorefrontService {
       pointsDiscountAmountYER: checkoutData.pointsDiscountAmountYER,
       note: input.note?.trim() ?? null,
       shippingAddress: this.buildShippingAddress(input, requiresAddress),
+      cartId: checkoutData.cart.id,
     });
-
+    this.maybeInjectCheckoutFailure('after_order_insert');
     await this.completeCheckoutArtifacts(db, storeId, orderId, customerId, input, checkoutData);
-    return order;
+    const refreshed = await db.query<OrderRecord>(
+      `SELECT id, store_id, customer_id, order_code, status, subtotal, total,
+              shipping_zone_id, shipping_method_id, shipping_method_snapshot, shipping_fee,
+              discount_total, points_redeemed, points_discount_amount, points_earned,
+              coupon_code, currency_code, exchange_rate_yer_per_unit, subtotal_yer, total_yer,
+              shipping_fee_yer, discount_total_yer, points_discount_amount_yer, note,
+              shipping_address, cart_id, created_at, updated_at
+       FROM orders WHERE store_id = $1 AND id = $2`,
+      [storeId, order.id],
+    );
+    return refreshed.rows[0] ?? order;
   }
 
   private async findOrCreateCheckoutCustomer(
@@ -2046,23 +2096,37 @@ export class StorefrontService {
         },
       });
     }
-    await this.createPayment(db, storeId, orderId, input, checkoutData);
+    const paymentId = await this.createPayment(db, storeId, orderId, input, checkoutData);
+    this.maybeInjectCheckoutFailure('after_payment_insert');
     if (checkoutData.promotion.couponId) {
-      await this.promotionsService.increaseCouponUsageInTransaction(
-        db,
+      await this.promotionsService.consumeCouponInTransaction(db, {
         storeId,
-        checkoutData.promotion.couponId,
-      );
+        couponId: checkoutData.promotion.couponId,
+        orderId,
+        customerId,
+        discountAmount: checkoutData.promotion.couponDiscount,
+        currencyCode: checkoutData.currency.currencyCode,
+        subtotal: checkoutData.subtotal,
+        productIds: checkoutData.items.map((item) => item.product_id),
+        categoryIds: checkoutData.items.flatMap((item) => item.category_id ? [item.category_id] : []),
+      });
     }
     if (checkoutData.pointsToRedeem > 0) {
-      await this.loyaltyService.applyRedemptionToOrderInTransaction(db, {
+      const actual = await this.loyaltyService.applyRedemptionToOrderInTransaction(db, {
         storeId,
         customerId,
         orderId,
         pointsToRedeem: checkoutData.pointsToRedeem,
         totalBeforeDiscount: checkoutData.subtotalYER + (checkoutData.shippingMethodYER?.cost ?? 0),
+        displayDiscountAmount: checkoutData.pointsDiscountAmount,
         createdByStoreUserId: null,
       });
+      if (
+        actual.pointsRedeemed !== checkoutData.pointsRedeemed ||
+        actual.discountAmount !== checkoutData.pointsDiscountAmountYER
+      ) {
+        throw new Error('Locked loyalty calculation diverged from the committed checkout total');
+      }
     }
     await this.affiliatesService.createPendingCommissionInTransaction(db, {
       storeId,
@@ -2079,14 +2143,63 @@ export class StorefrontService {
       changedBy: null,
       note: 'Order created via storefront checkout',
     });
-    await this.ordersRepository.markCartCheckedOut(db, checkoutData.cart.id);
+    const cartUpdated = await this.ordersRepository.markCartCheckedOut(
+      db,
+      storeId,
+      checkoutData.cart.id,
+      orderId,
+    );
+    if (!cartUpdated) {
+      throw new CheckoutDomainException(
+        CHECKOUT_ERROR_CODES.CART_ALREADY_CHECKED_OUT,
+        'Cart was checked out concurrently',
+      );
+    }
+
+    const reservations = await db.query<{ id: string; variant_id: string; quantity: number }>(
+      `SELECT id, variant_id, quantity FROM inventory_reservations
+       WHERE store_id = $1 AND order_id = $2 AND status = 'active'`,
+      [storeId, orderId],
+    );
+    for (const reservation of reservations.rows) {
+      await this.outboxService.enqueueInTransaction(db, {
+        aggregateType: 'inventory-reservation',
+        aggregateId: reservation.id,
+        eventType: 'inventory.reserved',
+        deduplicationKey: `inventory.reserved:${reservation.id}`,
+        payload: { storeId, orderId, variantId: reservation.variant_id, quantity: reservation.quantity },
+      });
+    }
+    await this.outboxService.enqueueInTransaction(db, {
+      aggregateType: 'payment',
+      aggregateId: paymentId,
+      eventType: 'payment.created',
+      deduplicationKey: `payment.created:${paymentId}`,
+      payload: { storeId, orderId, paymentId, amount: checkoutData.total, currencyCode: checkoutData.currency.currencyCode },
+    });
+    if (checkoutData.affiliateAttribution) {
+      await this.outboxService.enqueueInTransaction(db, {
+        aggregateType: 'order',
+        aggregateId: orderId,
+        eventType: 'affiliate.commission_created',
+        deduplicationKey: `affiliate.commission_created:${orderId}`,
+        payload: { storeId, orderId },
+      });
+    }
   }
 
-  private async publishOrderCreated(order: OrderRecord, storeId: string): Promise<void> {
-    await this.outboxService.enqueue({
+  private async publishOrderCreated(
+    db: QueryRunner,
+    order: OrderRecord,
+    storeId: string,
+    request: Request,
+  ): Promise<void> {
+    this.maybeInjectCheckoutFailure('outbox_insert');
+    await this.outboxService.enqueueInTransaction(db, {
       aggregateType: 'order',
       aggregateId: order.id,
       eventType: 'order.created',
+      deduplicationKey: `order.created:${order.id}`,
       payload: {
         orderId: order.id,
         orderCode: order.order_code,
@@ -2098,6 +2211,9 @@ export class StorefrontService {
         orderStatus: order.status,
         source: 'storefront_checkout',
       },
+      headers: request.headers['x-request-id']
+        ? { requestId: String(request.headers['x-request-id']) }
+        : {},
     });
   }
 
@@ -2135,7 +2251,7 @@ export class StorefrontService {
       source: 'storefront_cart',
     };
 
-    await this.outboxService.enqueue({
+    await this.outboxService.enqueueStandalone({
       aggregateType: 'cart',
       aggregateId: input.cartId,
       eventType: 'cart.item_added',
@@ -2143,7 +2259,7 @@ export class StorefrontService {
     });
 
     if (input.cart.currencyCode === 'YER' && input.cart.subtotal >= 50_000) {
-      await this.outboxService.enqueue({
+      await this.outboxService.enqueueStandalone({
         aggregateType: 'cart',
         aggregateId: input.cartId,
         eventType: 'cart.high_value_detected',
@@ -2152,7 +2268,7 @@ export class StorefrontService {
     }
 
     if (input.cart.totalItems >= 3) {
-      await this.outboxService.enqueue({
+      await this.outboxService.enqueueStandalone({
         aggregateType: 'cart',
         aggregateId: input.cartId,
         eventType: 'cart.strong_intent_detected',
@@ -2485,6 +2601,7 @@ export class StorefrontService {
         productId: item.product_id,
         variantId: item.variant_id,
         title: item.product_title,
+        variantName: item.variant_title,
         sku: item.sku,
         unitPrice,
         unitPriceYER,
@@ -2492,6 +2609,12 @@ export class StorefrontService {
         lineTotal: unitPrice * item.quantity,
         lineTotalYER: unitPriceYER * item.quantity,
         attributes: item.attributes,
+        currencyCode: currency.currencyCode,
+        productImage: item.product_image,
+        discountAmount: 0,
+        finalUnitPrice: unitPrice,
+        lineSubtotal: unitPrice * item.quantity,
+        lineDiscount: 0,
       });
     }
   }
@@ -2502,13 +2625,13 @@ export class StorefrontService {
     orderId: string,
     input: CheckoutDto,
     checkoutData: CheckoutData,
-  ): Promise<void> {
+  ): Promise<string> {
     if (!checkoutData.paymentSnapshot) {
       throw new BadRequestException('يرجى اختيار طريقة دفع متاحة لهذا المتجر.');
     }
     const snapshot = checkoutData.paymentSnapshot;
     const status = snapshot.type === 'cod' ? 'pending' : 'under_review';
-    await this.paymentMethodsRepository.createPayment(db, {
+    return this.paymentMethodsRepository.createPayment(db, {
       storeId,
       orderId,
       amount: checkoutData.total,
@@ -2520,6 +2643,36 @@ export class StorefrontService {
       payerReceiptUrl: checkoutData.payerReceiptUrl,
       payerNote: input.payerNote?.trim() || null,
     });
+  }
+
+  private async attachCheckoutConversionsInTransaction(
+    db: QueryRunner,
+    storeId: string,
+    input: CheckoutDto,
+    order: OrderRecord,
+  ): Promise<void> {
+    await db.query(
+      `UPDATE abandoned_carts
+       SET recovered_at = NOW(), recovered_order_id = $3, updated_at = NOW()
+       WHERE store_id = $1 AND cart_id = $2 AND recovered_at IS NULL AND expires_at > NOW()`,
+      [storeId, input.cartId, order.id],
+    );
+    const restockToken = input.restockToken?.trim();
+    if (restockToken && order.customer_id) {
+      await db.query(
+        `UPDATE product_restock_notifications
+         SET created_order_id = $4, conversion_amount = $5, converted_at = NOW(), updated_at = NOW()
+         WHERE token = $1 AND store_id = $2 AND customer_id = $3
+           AND created_order_id IS NULL AND expires_at > NOW()`,
+        [restockToken, storeId, order.customer_id, order.id, Number(order.total)],
+      );
+    }
+  }
+
+  private maybeInjectCheckoutFailure(point: string): void {
+    if (process.env.NODE_ENV === 'test' && process.env.STAGE3_CHECKOUT_FAILURE_POINT === point) {
+      throw new Error(`Injected checkout failure at ${point}`);
+    }
   }
 
   private mapStatusHistory(entry: OrderStatusHistoryRecord) {

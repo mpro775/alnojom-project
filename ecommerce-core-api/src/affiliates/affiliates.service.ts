@@ -521,9 +521,8 @@ export class AffiliatesService {
       return;
     }
 
-    const affiliate = await this.affiliatesRepository.findAffiliateById(
-      input.storeId,
-      input.attribution.affiliateId,
+    const affiliate = await this.affiliatesRepository.findAffiliateByIdInTransaction(
+      db, input.storeId, input.attribution.affiliateId,
     );
     if (!affiliate || affiliate.status !== 'active') {
       return;
@@ -548,6 +547,7 @@ export class AffiliatesService {
       commissionRatePercent: rate,
       commissionBase: amounts.commissionBase,
       commissionAmount: amounts.commissionAmount,
+      returnWindowDays: this.affiliateReturnWindowDays(),
     });
 
     await this.affiliatesRepository.approveCommissionIfEligible(db, input.storeId, input.orderId);
@@ -576,22 +576,40 @@ export class AffiliatesService {
     orderId: string;
     nextStatus: string;
   }): Promise<void> {
-    await this.affiliatesRepository.withTransaction(async (db) => {
-      if (input.nextStatus === 'approved') {
-        await this.affiliatesRepository.approveCommissionIfEligible(
-          db,
-          input.storeId,
-          input.orderId,
-        );
-      }
-      if (input.nextStatus === 'refunded') {
-        await this.affiliatesRepository.reverseCommission(db, {
-          storeId: input.storeId,
-          orderId: input.orderId,
-          reason: 'payment_refunded',
-        });
-      }
-    });
+    await this.affiliatesRepository.withTransaction((db) =>
+      this.handlePaymentStatusChangedInTransaction(db, input),
+    );
+  }
+
+  async handlePaymentStatusChangedInTransaction(
+    db: Queryable,
+    input: { storeId: string; orderId: string; nextStatus: string },
+  ): Promise<void> {
+    if (input.nextStatus === 'approved') {
+      await this.affiliatesRepository.approveCommissionIfEligible(
+        db,
+        input.storeId,
+        input.orderId,
+      );
+    }
+    if (input.nextStatus === 'refunded' || input.nextStatus === 'rejected') {
+      await this.affiliatesRepository.reverseCommission(db, {
+        storeId: input.storeId,
+        orderId: input.orderId,
+        reason: `payment_${input.nextStatus}`,
+      });
+    }
+  }
+
+  async advancePayableCommissions(): Promise<number> {
+    return this.affiliatesRepository.withTransaction((db) =>
+      this.affiliatesRepository.markEligibleCommissionsPayable(db),
+    );
+  }
+
+  private affiliateReturnWindowDays(): number {
+    const value = Number(process.env.AFFILIATE_RETURN_WINDOW_DAYS ?? 14);
+    return Number.isInteger(value) && value >= 0 && value <= 3650 ? value : 14;
   }
 
   private mapAffiliate(row: {

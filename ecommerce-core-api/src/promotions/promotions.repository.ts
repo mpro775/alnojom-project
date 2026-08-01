@@ -26,6 +26,13 @@ export interface CouponRecord {
   max_uses: number | null;
   used_count: number;
   is_active: boolean;
+  per_customer_limit: number | null;
+  maximum_discount: string | null;
+  currency_code: string | null;
+  included_product_ids: string[];
+  excluded_product_ids: string[];
+  included_category_ids: string[];
+  excluded_category_ids: string[];
 }
 
 export interface OfferRecord {
@@ -63,6 +70,13 @@ export class PromotionsRepository {
     startsAt: Date | null;
     endsAt: Date | null;
     maxUses: number | null;
+    perCustomerLimit: number | null;
+    maximumDiscount: number | null;
+    currencyCode: string | null;
+    includedProductIds: string[];
+    excludedProductIds: string[];
+    includedCategoryIds: string[];
+    excludedCategoryIds: string[];
   }): Promise<CouponRecord> {
     const result = await this.databaseService.db.query<CouponRecord>(
       `
@@ -78,9 +92,15 @@ export class PromotionsRepository {
           starts_at,
           ends_at,
           max_uses,
-          is_active
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, TRUE)
-        RETURNING id, store_id, code, affiliate_id, is_free_shipping, discount_type, discount_value, min_order_amount, starts_at, ends_at, max_uses, used_count, is_active
+          is_active, per_customer_limit, maximum_discount, currency_code,
+          included_product_ids, excluded_product_ids,
+          included_category_ids, excluded_category_ids
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, TRUE,
+                  $12, $13, $14, $15, $16, $17, $18)
+        RETURNING id, store_id, code, affiliate_id, is_free_shipping, discount_type,
+          discount_value, min_order_amount, starts_at, ends_at, max_uses, used_count,
+          is_active, per_customer_limit, maximum_discount, currency_code,
+          included_product_ids, excluded_product_ids, included_category_ids, excluded_category_ids
       `,
       [
         uuidv4(),
@@ -94,6 +114,13 @@ export class PromotionsRepository {
         input.startsAt,
         input.endsAt,
         input.maxUses,
+        input.perCustomerLimit,
+        input.maximumDiscount,
+        input.currencyCode,
+        input.includedProductIds,
+        input.excludedProductIds,
+        input.includedCategoryIds,
+        input.excludedCategoryIds,
       ],
     );
     return result.rows[0] as CouponRecord;
@@ -102,8 +129,9 @@ export class PromotionsRepository {
   async listCoupons(storeId: string, q?: string): Promise<CouponRecord[]> {
     const result = await this.databaseService.db.query<CouponRecord>(
       `
-        SELECT id, store_id, code, discount_type, discount_value, min_order_amount, starts_at, ends_at, max_uses, used_count, is_active
-        , affiliate_id, is_free_shipping
+        SELECT id, store_id, code, discount_type, discount_value, min_order_amount, starts_at, ends_at, max_uses, used_count, is_active,
+               affiliate_id, is_free_shipping, per_customer_limit, maximum_discount, currency_code,
+               included_product_ids, excluded_product_ids, included_category_ids, excluded_category_ids
         FROM coupons
         WHERE store_id = $1
           AND ($2::text IS NULL OR code ILIKE '%' || $2 || '%')
@@ -118,7 +146,8 @@ export class PromotionsRepository {
     const result = await this.databaseService.db.query<CouponRecord>(
       `
         SELECT id, store_id, code, discount_type, discount_value, min_order_amount, starts_at, ends_at, max_uses, used_count, is_active
-        , affiliate_id, is_free_shipping
+        , affiliate_id, is_free_shipping, per_customer_limit, maximum_discount, currency_code,
+          included_product_ids, excluded_product_ids, included_category_ids, excluded_category_ids
         FROM coupons
         WHERE store_id = $1
           AND id = $2
@@ -132,13 +161,33 @@ export class PromotionsRepository {
   async findCouponByCode(storeId: string, code: string): Promise<CouponRecord | null> {
     const result = await this.databaseService.db.query<CouponRecord>(
       `
-        SELECT id, store_id, code, discount_type, discount_value, min_order_amount, starts_at, ends_at, max_uses, used_count, is_active
-        , affiliate_id, is_free_shipping
+        SELECT id, store_id, code, discount_type, discount_value, min_order_amount, starts_at, ends_at, max_uses, used_count, is_active,
+               affiliate_id, is_free_shipping, per_customer_limit, maximum_discount, currency_code,
+               included_product_ids, excluded_product_ids, included_category_ids, excluded_category_ids
         FROM coupons
         WHERE store_id = $1
           AND LOWER(code) = LOWER($2)
         LIMIT 1
       `,
+      [storeId, code],
+    );
+    return result.rows[0] ?? null;
+  }
+
+  async findCouponByCodeForCheckout(
+    db: Queryable,
+    storeId: string,
+    code: string,
+  ): Promise<CouponRecord | null> {
+    const result = await db.query<CouponRecord>(
+      `SELECT id, store_id, code, discount_type, discount_value, min_order_amount,
+              starts_at, ends_at, max_uses, used_count, is_active, affiliate_id,
+              is_free_shipping, per_customer_limit, maximum_discount, currency_code,
+              included_product_ids, excluded_product_ids,
+              included_category_ids, excluded_category_ids
+       FROM coupons
+       WHERE store_id = $1 AND LOWER(code) = LOWER($2)
+       FOR UPDATE`,
       [storeId, code],
     );
     return result.rows[0] ?? null;
@@ -157,6 +206,13 @@ export class PromotionsRepository {
     endsAt: Date | null;
     maxUses: number | null;
     isActive: boolean;
+    perCustomerLimit: number | null;
+    maximumDiscount: number | null;
+    currencyCode: string | null;
+    includedProductIds: string[];
+    excludedProductIds: string[];
+    includedCategoryIds: string[];
+    excludedCategoryIds: string[];
   }): Promise<CouponRecord | null> {
     const result = await this.databaseService.db.query<CouponRecord>(
       `
@@ -171,10 +227,20 @@ export class PromotionsRepository {
             ends_at = $10,
             max_uses = $11,
             is_active = $12,
+            per_customer_limit = $13,
+            maximum_discount = $14,
+            currency_code = $15,
+            included_product_ids = $16,
+            excluded_product_ids = $17,
+            included_category_ids = $18,
+            excluded_category_ids = $19,
             updated_at = NOW()
         WHERE store_id = $1
           AND id = $2
-        RETURNING id, store_id, code, affiliate_id, is_free_shipping, discount_type, discount_value, min_order_amount, starts_at, ends_at, max_uses, used_count, is_active
+        RETURNING id, store_id, code, affiliate_id, is_free_shipping, discount_type,
+          discount_value, min_order_amount, starts_at, ends_at, max_uses, used_count,
+          is_active, per_customer_limit, maximum_discount, currency_code,
+          included_product_ids, excluded_product_ids, included_category_ids, excluded_category_ids
       `,
       [
         input.storeId,
@@ -189,6 +255,13 @@ export class PromotionsRepository {
         input.endsAt,
         input.maxUses,
         input.isActive,
+        input.perCustomerLimit,
+        input.maximumDiscount,
+        input.currencyCode,
+        input.includedProductIds,
+        input.excludedProductIds,
+        input.includedCategoryIds,
+        input.excludedCategoryIds,
       ],
     );
     return result.rows[0] ?? null;
@@ -208,6 +281,116 @@ export class PromotionsRepository {
       [couponId, storeId],
     );
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async consumeCoupon(
+    db: Queryable,
+    input: {
+      storeId: string;
+      couponId: string;
+      orderId: string;
+      customerId: string | null;
+      discountAmount: number;
+      currencyCode: string;
+      productIds: string[];
+      categoryIds: string[];
+      subtotal: number;
+    },
+  ): Promise<{ id: string; code: string }> {
+    const locked = await db.query<CouponRecord>(
+      `SELECT id, store_id, code, affiliate_id, is_free_shipping, discount_type,
+              discount_value, min_order_amount, starts_at, ends_at, max_uses, used_count,
+              is_active, per_customer_limit, maximum_discount, currency_code,
+              included_product_ids, excluded_product_ids,
+              included_category_ids, excluded_category_ids
+       FROM coupons
+       WHERE store_id = $1 AND id = $2
+       FOR UPDATE`,
+      [input.storeId, input.couponId],
+    );
+    const coupon = locked.rows[0];
+    if (!coupon) throw new Error('COUPON_INVALID');
+    const now = Date.now();
+    if (!coupon.is_active) throw new Error('COUPON_INVALID');
+    if (coupon.starts_at && coupon.starts_at.getTime() > now) throw new Error('COUPON_INVALID');
+    if (coupon.ends_at && coupon.ends_at.getTime() <= now) throw new Error('COUPON_EXPIRED');
+    if (input.subtotal < Number(coupon.min_order_amount)) throw new Error('COUPON_INVALID');
+    if (coupon.currency_code && coupon.currency_code !== input.currencyCode) throw new Error('COUPON_INVALID');
+    if (coupon.maximum_discount !== null && input.discountAmount > Number(coupon.maximum_discount)) {
+      throw new Error('COUPON_INVALID');
+    }
+    const products = new Set(input.productIds);
+    const categories = new Set(input.categoryIds);
+    if (coupon.included_product_ids.length > 0 && !coupon.included_product_ids.some((id) => products.has(id))) throw new Error('COUPON_INVALID');
+    if (coupon.excluded_product_ids.some((id) => products.has(id))) throw new Error('COUPON_INVALID');
+    if (coupon.included_category_ids.length > 0 && !coupon.included_category_ids.some((id) => categories.has(id))) throw new Error('COUPON_INVALID');
+    if (coupon.excluded_category_ids.some((id) => categories.has(id))) throw new Error('COUPON_INVALID');
+
+    const incremented = await db.query(
+      `UPDATE coupons
+       SET used_count = used_count + 1, updated_at = NOW()
+       WHERE id = $1 AND store_id = $2 AND is_active = TRUE
+         AND (starts_at IS NULL OR starts_at <= NOW())
+         AND (ends_at IS NULL OR ends_at > NOW())
+         AND (max_uses IS NULL OR used_count < max_uses)`,
+      [coupon.id, input.storeId],
+    );
+    if ((incremented.rowCount ?? 0) !== 1) throw new Error('COUPON_USAGE_LIMIT_REACHED');
+
+    if (coupon.per_customer_limit !== null) {
+      if (!input.customerId) throw new Error('COUPON_CUSTOMER_LIMIT_REACHED');
+      const counter = await db.query(
+        `INSERT INTO coupon_customer_counters (store_id, coupon_id, customer_id, consumed_count)
+         VALUES ($1, $2, $3, 1)
+         ON CONFLICT (store_id, coupon_id, customer_id)
+         DO UPDATE SET consumed_count = coupon_customer_counters.consumed_count + 1,
+                       updated_at = NOW()
+         WHERE coupon_customer_counters.consumed_count < $4`,
+        [input.storeId, coupon.id, input.customerId, coupon.per_customer_limit],
+      );
+      if ((counter.rowCount ?? 0) !== 1) throw new Error('COUPON_CUSTOMER_LIMIT_REACHED');
+    }
+
+    const usageId = uuidv4();
+    await db.query(
+      `INSERT INTO coupon_usages (
+         id, store_id, coupon_id, order_id, customer_id, coupon_code_snapshot,
+         discount_amount, currency_code, status
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'consumed')
+       ON CONFLICT (store_id, coupon_id, order_id) DO NOTHING`,
+      [usageId, input.storeId, coupon.id, input.orderId, input.customerId, coupon.code,
+       input.discountAmount, input.currencyCode],
+    );
+    return { id: usageId, code: coupon.code };
+  }
+
+  async reverseCouponUsage(
+    db: Queryable,
+    input: { storeId: string; orderId: string; reason: string },
+  ): Promise<boolean> {
+    const reversed = await db.query<{ coupon_id: string; customer_id: string | null }>(
+      `UPDATE coupon_usages
+       SET status = 'reversed', reversed_at = NOW(), reversal_reason = $3
+       WHERE store_id = $1 AND order_id = $2 AND status = 'consumed'
+       RETURNING coupon_id, customer_id`,
+      [input.storeId, input.orderId, input.reason],
+    );
+    const row = reversed.rows[0];
+    if (!row) return false;
+    await db.query(
+      `UPDATE coupons SET used_count = GREATEST(used_count - 1, 0), updated_at = NOW()
+       WHERE store_id = $1 AND id = $2`,
+      [input.storeId, row.coupon_id],
+    );
+    if (row.customer_id) {
+      await db.query(
+        `UPDATE coupon_customer_counters
+         SET consumed_count = consumed_count - 1, updated_at = NOW()
+         WHERE store_id = $1 AND coupon_id = $2 AND customer_id = $3 AND consumed_count > 0`,
+        [input.storeId, row.coupon_id, row.customer_id],
+      );
+    }
+    return true;
   }
 
   async affiliateExistsForStore(storeId: string, affiliateId: string): Promise<boolean> {

@@ -105,6 +105,23 @@ export class MetricsService implements MetricsCollector, OnModuleInit {
       labelNames: ['store_id'],
       buckets: [1, 5, 10, 30, 60, 120],
     });
+
+    const commercialCounters: CounterOptions[] = [
+      { name: 'checkout_success_total', help: 'Committed atomic checkouts', labelNames: ['store_id'] },
+      { name: 'checkout_failure_total', help: 'Atomic checkout failures', labelNames: ['store_id', 'reason'] },
+      { name: 'checkout_idempotency_replay_total', help: 'Checkout idempotency replays', labelNames: ['store_id', 'operation'] },
+      { name: 'checkout_idempotency_conflict_total', help: 'Checkout idempotency conflicts', labelNames: ['store_id'] },
+      { name: 'inventory_reservation_failure_total', help: 'Inventory reservation failures', labelNames: ['store_id'] },
+      { name: 'inventory_reservation_expired_total', help: 'Expired inventory reservations', labelNames: ['store_id'] },
+      { name: 'payment_transition_conflict_total', help: 'Rejected concurrent payment transitions', labelNames: ['store_id'] },
+      { name: 'outbox_claimed_total', help: 'Outbox rows claimed by workers' },
+      { name: 'outbox_published_total', help: 'Outbox rows broker-confirmed' },
+      { name: 'outbox_retry_total', help: 'Outbox publish retries' },
+      { name: 'outbox_failed_total', help: 'Terminal outbox failures' },
+      { name: 'coupon_concurrency_rejection_total', help: 'Coupon concurrency rejections', labelNames: ['store_id'] },
+      { name: 'loyalty_concurrency_rejection_total', help: 'Loyalty concurrency rejections', labelNames: ['store_id'] },
+    ];
+    for (const counter of commercialCounters) this.registerCounter(counter);
   }
 
   registerCounter(options: CounterOptions): void {
