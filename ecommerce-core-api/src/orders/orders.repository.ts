@@ -17,6 +17,7 @@ interface Queryable {
 export interface StoreVariantSnapshot {
   variant_id: string;
   product_id: string;
+  category_id: string | null;
   product_status: string;
   product_is_visible: boolean;
   product_type: 'single' | 'bundled' | 'digital';
@@ -281,6 +282,7 @@ export class OrdersRepository {
         SELECT
           pv.id AS variant_id,
           pv.product_id,
+          p.category_id,
           p.status AS product_status,
           p.is_visible AS product_is_visible,
           p.product_type,

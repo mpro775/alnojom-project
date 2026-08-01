@@ -271,6 +271,74 @@ export class PromotionsService {
     return this.mapOffer(updated);
   }
 
+  async computeManualOrderCouponDiscount(
+    storeId: string,
+    couponCode: string,
+    lines: Array<{
+      variantId: string;
+      productId: string;
+      categoryId: string | null;
+      unitPrice: number;
+      quantity: number;
+      lineDiscount: number;
+    }>,
+    at: Date,
+    db?: Parameters<PromotionsRepository['findCouponByCodeForCheckout']>[0],
+  ): Promise<{
+    couponId: string | null;
+    couponCode: string | null;
+    couponDiscount: number;
+    couponIsFreeShipping: boolean;
+    couponEligibleVariantIds: string[];
+  }> {
+    const normalizedCode = couponCode.trim().toUpperCase();
+    const coupon = db
+      ? await this.promotionsRepository.findCouponByCodeForCheckout(db, storeId, normalizedCode)
+      : await this.promotionsRepository.findCouponByCode(storeId, normalizedCode);
+
+    if (!coupon) {
+      throw new BadRequestException('Coupon not found');
+    }
+
+    const couponEligibleItems = lines.filter((line) => {
+      if (coupon.excluded_product_ids.includes(line.productId)) return false;
+      if (line.categoryId && coupon.excluded_category_ids.includes(line.categoryId)) return false;
+      if (coupon.included_product_ids.length > 0 && !coupon.included_product_ids.includes(line.productId)) {
+        return false;
+      }
+      if (coupon.included_category_ids.length > 0 &&
+          (!line.categoryId || !coupon.included_category_ids.includes(line.categoryId))) {
+        return false;
+      }
+      return true;
+    });
+
+    const couponEligibleVariantIds = couponEligibleItems.map((line) => line.variantId);
+    const couponBase = Number(couponEligibleItems.reduce(
+      (sum, line) => sum + Math.max(0, line.unitPrice * line.quantity - line.lineDiscount),
+      0,
+    ).toFixed(2));
+
+    this.assertCouponUsable(coupon, couponBase, at);
+    
+    let couponDiscount = this.promotionsRepository.calculateDiscount(
+      Number(coupon.discount_value),
+      coupon.discount_type,
+      couponBase,
+    );
+    if (coupon.maximum_discount !== null) {
+      couponDiscount = Math.min(couponDiscount, Number(coupon.maximum_discount));
+    }
+
+    return {
+      couponId: coupon.id,
+      couponCode: coupon.code,
+      couponDiscount,
+      couponIsFreeShipping: coupon.is_free_shipping,
+      couponEligibleVariantIds,
+    };
+  }
+
   async computeCheckoutDiscount(
     storeId: string,
     input: PromotionComputationInput,

@@ -53,6 +53,7 @@ const EDITABLE_PAYMENT_STATUSES: PaymentStatus[] = ['pending', 'under_review', '
 interface ManualResolvedLine {
   productId: string;
   variantId: string;
+  categoryId: string | null;
   title: string;
   sku: string;
   catalogUnitPrice: number;
@@ -76,6 +77,7 @@ interface ManualOrderComputation {
   couponCode: string | null;
   couponId: string | null;
   couponDiscount: number;
+  couponEligibleVariantIds: string[];
   lines: ManualResolvedLine[];
   inventoryItems: InventoryOrderItemInput[];
   subtotal: number;
@@ -325,7 +327,7 @@ export class OrdersService {
       });
 
       await this.persistOrderItems(db, currentUser.storeId, orderId, computation.lines,
-        computation.couponDiscount,resolvedCurrency.currencyCode, {
+        computation.couponDiscount,computation.couponEligibleVariantIds,resolvedCurrency.currencyCode, {
           actorId: currentUser.id, reason: input.priceOverrideReason?.trim() ?? null,
         });
       if (computation.inventoryItems.length > 0) {
@@ -352,7 +354,7 @@ export class OrdersService {
         await this.promotionsService.consumeCouponInTransaction(db,{storeId:currentUser.storeId,
           couponId:computation.couponId,orderId,customerId:computation.customer.id,
           discountAmount:computation.couponDiscount,currencyCode:resolvedCurrency.currencyCode,
-          subtotal:computation.subtotal,productIds:computation.lines.map((line)=>line.productId),categoryIds:[]});
+          subtotal:computation.subtotal,productIds:computation.lines.map((line)=>line.productId),categoryIds:computation.lines.map((line)=>line.categoryId).filter((id)=>id!==null) as string[]});
       }
 
       await this.ordersRepository.insertOrderStatusHistory(db, {
@@ -537,7 +539,7 @@ export class OrdersService {
 
       await this.ordersRepository.deleteOrderItems(db, { storeId: currentUser.storeId, orderId });
       await this.persistOrderItems(db, currentUser.storeId, orderId, computation.lines,
-        computation.couponDiscount,order.currency_code, {
+        computation.couponDiscount,computation.couponEligibleVariantIds,order.currency_code, {
           actorId: currentUser.id, reason: input.priceOverrideReason?.trim() ?? null,
         });
 
@@ -572,7 +574,7 @@ export class OrdersService {
           storeId:currentUser.storeId,couponId:computation.couponId,orderId,
           customerId:computation.customer.id,discountAmount:computation.couponDiscount,
           currencyCode:order.currency_code,subtotal:computation.subtotal,
-          productIds:computation.lines.map((line)=>line.productId),categoryIds:[]});
+          productIds:computation.lines.map((line)=>line.productId),categoryIds:computation.lines.map((line)=>line.categoryId).filter((id)=>id!==null) as string[]});
       await this.ordersRepository.insertOrderStatusHistory(db, {
         storeId: currentUser.storeId, orderId, fromStatus: 'new', toStatus: 'new',
         actorId: currentUser.id, actorType: 'admin', command: 'editManualOrder',
@@ -816,21 +818,21 @@ export class OrdersService {
     let couponId: string | null = null;
     let couponDiscount = 0;
     let couponIsFreeShipping = false;
+    let couponEligibleVariantIds: string[] = [];
 
     if (normalizedCouponCode) {
-      const coupon = db
-        ? await this.promotionsService.applyCouponInTransaction(db, currentUser.storeId, {
-            code: normalizedCouponCode,
-            subtotal: subtotal - lineDiscountTotal,
-          })
-        : await this.promotionsService.applyCoupon(currentUser, {
-            code: normalizedCouponCode,
-            subtotal: subtotal - lineDiscountTotal,
-          });
-      couponCode = coupon.code;
+      const coupon = await this.promotionsService.computeManualOrderCouponDiscount(
+        currentUser.storeId,
+        normalizedCouponCode,
+        lines,
+        new Date(),
+        db,
+      );
+      couponCode = coupon.couponCode;
       couponId = coupon.couponId;
-      couponDiscount = coupon.discount;
-      couponIsFreeShipping = coupon.isFreeShipping;
+      couponDiscount = coupon.couponDiscount;
+      couponIsFreeShipping = coupon.couponIsFreeShipping;
+      couponEligibleVariantIds = coupon.couponEligibleVariantIds;
     }
 
     const shippingZone = input.shippingZoneId
@@ -919,6 +921,7 @@ export class OrdersService {
       couponCode,
       couponId,
       couponDiscount,
+      couponEligibleVariantIds,
       lines,
       inventoryItems: this.buildInventoryItems(lines),
       subtotal,
@@ -990,6 +993,7 @@ export class OrdersService {
       resolved.push({
         productId: variant.product_id,
         variantId: variant.variant_id,
+        categoryId: variant.category_id,
         title: this.resolveVariantTitle(variant),
         sku: variant.sku,
         catalogUnitPrice: Number(Number(variant.price).toFixed(2)),
@@ -1093,11 +1097,12 @@ export class OrdersService {
     orderId: string,
     lines: ManualResolvedLine[],
     couponDiscount: number,
+    couponEligibleVariantIds: string[],
     currencyCode: string,
     overrideAudit: { actorId: string; reason: string | null },
   ): Promise<void> {
     const snapshotAt = new Date().toISOString();
-    const couponAllocation=allocateLargestRemainder(lines.map((line)=>({key:line.variantId,
+    const couponAllocation=allocateLargestRemainder(lines.filter(l => couponEligibleVariantIds.includes(l.variantId)).map((line)=>({key:line.variantId,
       amount:Number((line.unitPrice*line.quantity-line.lineDiscount).toFixed(2))})),couponDiscount);
     for (const line of lines) {
       const lineSubtotal=Number((line.unitPrice*line.quantity).toFixed(2));
