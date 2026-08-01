@@ -208,6 +208,7 @@ export class InventoryRepository {
   ): Promise<number> {
     const claimed = await db.query<{
       id: string;
+      order_id: string;
       variant_id: string;
       warehouse_id: string;
       quantity: number;
@@ -224,11 +225,19 @@ export class InventoryRepository {
        SET status = 'expired', released_at = NOW(), release_reason = 'expired', updated_at = NOW()
        FROM candidates
        WHERE reservation.id = candidates.id
-       RETURNING reservation.id, reservation.variant_id, reservation.warehouse_id,
+       RETURNING reservation.id, reservation.order_id, reservation.variant_id, reservation.warehouse_id,
                  reservation.quantity`,
       [storeId, limit],
     );
     for (const row of claimed.rows) {
+      await db.query(
+        `INSERT INTO inventory_reservation_events (
+          id,reservation_id,store_id,order_id,variant_id,warehouse_id,event_type,quantity,
+          from_status,to_status,actor_id,actor_type,reason_code,business_key)
+         VALUES ($1,$2,$3,$4,$5,$6,'expired',$7,'active','expired',NULL,'worker','ttl_expired',$8)
+         ON CONFLICT (store_id,business_key) DO NOTHING`,
+        [uuidv4(),row.id,storeId,row.order_id,row.variant_id,row.warehouse_id,row.quantity,
+          `reservation:${row.id}:expire`]);
       await this.decrementWarehouseReservation(db, storeId, row.variant_id, row.warehouse_id, row.quantity);
       await this.createMovement(db, {
         storeId,

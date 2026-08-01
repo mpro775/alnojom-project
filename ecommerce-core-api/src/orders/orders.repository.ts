@@ -4,7 +4,8 @@ import { DatabaseService } from '../database/database.service';
 import type { OrderStatus } from './constants/order-status.constants';
 import type { PaymentMethod } from './constants/payment.constants';
 
-export type PaymentStatus = 'pending' | 'under_review' | 'approved' | 'rejected' | 'refunded';
+export type PaymentStatus = 'pending' | 'submitted' | 'under_review' | 'approved' | 'rejected' |
+  'expired' | 'cancelled' | 'partially_refunded' | 'refunded';
 
 interface Queryable {
   query: <T = unknown>(
@@ -69,6 +70,9 @@ export interface OrderRecord {
   customer_id: string | null;
   order_code: string;
   status: OrderStatus;
+  fulfillment_status: 'unfulfilled' | 'preparing' | 'ready' | 'out_for_delivery' | 'fulfilled' | 'failed' | 'cancelled';
+  fulfillment_type: 'delivery' | 'pickup' | 'external_shipping' | 'manual_coordination';
+  version: string;
   subtotal: string;
   total: string;
   shipping_zone_id: string | null;
@@ -76,6 +80,9 @@ export interface OrderRecord {
   shipping_method_snapshot?: Record<string, unknown> | null;
   shipping_fee: string;
   discount_total: string;
+  tax_amount: string;
+  paid_amount: string;
+  refunded_amount: string;
   points_redeemed: number;
   points_discount_amount: string;
   points_earned: number;
@@ -178,10 +185,10 @@ export interface OrderItemRecord {
 
 export interface OrderStatusHistoryRecord {
   id: string;
-  old_status: string | null;
-  new_status: string;
-  changed_by: string | null;
-  note: string | null;
+  from_status: string | null;
+  to_status: string;
+  actor_id: string | null;
+  reason: string | null;
   created_at: Date;
 }
 
@@ -212,7 +219,7 @@ interface CreateOrderInput {
 }
 
 const ORDER_RETURNING_FIELDS =
-  'id, store_id, customer_id, order_code, status, subtotal, total, shipping_zone_id, shipping_method_id, shipping_method_snapshot, shipping_fee, discount_total, points_redeemed, points_discount_amount, points_earned, coupon_code, currency_code, exchange_rate_yer_per_unit, subtotal_yer, total_yer, shipping_fee_yer, discount_total_yer, points_discount_amount_yer, note, shipping_address, cart_id, created_at, updated_at';
+  'id, store_id, customer_id, order_code, status, fulfillment_status, fulfillment_type, version::text, subtotal, total, shipping_zone_id, shipping_method_id, shipping_method_snapshot, shipping_fee, discount_total, tax_amount, paid_amount, refunded_amount, points_redeemed, points_discount_amount, points_earned, coupon_code, currency_code, exchange_rate_yer_per_unit, subtotal_yer, total_yer, shipping_fee_yer, discount_total_yer, points_discount_amount_yer, note, shipping_address, cart_id, created_at, updated_at';
 
 const INSERT_ORDER_QUERY = `
   INSERT INTO orders (
@@ -221,6 +228,7 @@ const INSERT_ORDER_QUERY = `
     customer_id,
     order_code,
     status,
+    fulfillment_status,
     subtotal,
     total,
     shipping_zone_id,
@@ -240,7 +248,7 @@ const INSERT_ORDER_QUERY = `
     note,
     shipping_address,
     cart_id
-  ) VALUES ($1, $2, $3, $4, 'new', $5, $6, $7, $8, $9::jsonb, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22::jsonb, $23)
+  ) VALUES ($1, $2, $3, $4, 'new', 'unfulfilled', $5, $6, $7, $8, $9::jsonb, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22::jsonb, $23)
   RETURNING ${ORDER_RETURNING_FIELDS}
 `;
 
@@ -266,8 +274,9 @@ export class OrdersRepository {
   async findVariantForStore(
     storeId: string,
     variantId: string,
+    db?: Queryable,
   ): Promise<StoreVariantSnapshot | null> {
-    const result = await this.databaseService.db.query<StoreVariantSnapshot>(
+    const result = await (db ?? this.databaseService.db).query<StoreVariantSnapshot>(
       `
         SELECT
           pv.id AS variant_id,
@@ -785,6 +794,7 @@ export class OrdersRepository {
       finalUnitPrice: number;
       lineSubtotal: number;
       lineDiscount: number;
+      taxSnapshot: Record<string, unknown>;
     },
   ): Promise<void> {
     await db.query(
@@ -815,7 +825,7 @@ export class OrdersRepository {
           line_discount
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::jsonb,
-          $6, $14, $15, $16, $17, $18, $13::jsonb, '{}'::jsonb, $19, $20
+          $6, $14, $15, $16, $17, $18, $13::jsonb, $19::jsonb, $20, $21
         )
       `,
       [
@@ -837,6 +847,7 @@ export class OrdersRepository {
         input.finalUnitPrice,
         input.currencyCode,
         input.productImage,
+        JSON.stringify(input.taxSnapshot),
         input.lineSubtotal,
         input.lineDiscount,
       ],
@@ -845,21 +856,34 @@ export class OrdersRepository {
 
   async createPayment(
     db: Queryable,
-    input: { storeId: string; orderId: string; method: PaymentMethod; amount: number },
+    input: { storeId: string; orderId: string; method: PaymentMethod; amount: number; currencyCode: string },
   ): Promise<void> {
     await db.query(
       `
         INSERT INTO payments (
           id, store_id, order_id, method, status, amount, amount_yer,
-          payment_method_code, payment_method_name
+          payment_method_code, payment_method_name, currency_code
         )
         VALUES (
           $1, $2, $3, $4, 'pending', $5, $5, $4,
-          CASE $4 WHEN 'cod' THEN 'الدفع عند الاستلام' WHEN 'transfer' THEN 'تحويل بنكي' ELSE $4 END
+          CASE $4 WHEN 'cod' THEN 'الدفع عند الاستلام' WHEN 'transfer' THEN 'تحويل بنكي' ELSE $4 END, $6
         )
       `,
-      [uuidv4(), input.storeId, input.orderId, input.method, input.amount],
+      [uuidv4(), input.storeId, input.orderId, input.method, input.amount, input.currencyCode],
     );
+    if (input.method !== 'cod') {
+      await db.query(
+        `UPDATE payments
+         SET expires_at = NOW() + ($3::int * INTERVAL '1 minute')
+         WHERE store_id = $1 AND order_id = $2`,
+        [input.storeId, input.orderId, this.paymentExpirationMinutes()],
+      );
+    }
+  }
+
+  private paymentExpirationMinutes(): number {
+    const value = Number(process.env.PAYMENT_DEFAULT_EXPIRATION_MINUTES ?? 1440);
+    return Number.isInteger(value) && value >= 1 && value <= 43200 ? value : 1440;
   }
 
   async markCartCheckedOut(
@@ -906,10 +930,15 @@ export class OrdersRepository {
     input: {
       storeId: string;
       orderId: string;
-      oldStatus: string | null;
-      newStatus: string;
-      changedBy: string | null;
-      note: string | null;
+      fromStatus: string | null;
+      toStatus: string;
+      actorId: string | null;
+      actorType: 'customer' | 'admin' | 'system' | 'worker' | 'integration';
+      command: string;
+      reason: string | null;
+      requestId?: string | null;
+      idempotencyRecordId?: string | null;
+      businessKey: string;
     },
   ): Promise<void> {
     await db.query(
@@ -918,20 +947,24 @@ export class OrdersRepository {
           id,
           store_id,
           order_id,
-          old_status,
-          new_status,
-          changed_by,
-          note
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+          from_status, to_status, actor_id, actor_type, command, reason,
+          request_id, idempotency_record_id, business_key
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        ON CONFLICT (store_id, business_key) DO NOTHING
       `,
       [
         uuidv4(),
         input.storeId,
         input.orderId,
-        input.oldStatus,
-        input.newStatus,
-        input.changedBy,
-        input.note,
+        input.fromStatus,
+        input.toStatus,
+        input.actorId,
+        input.actorType,
+        input.command,
+        input.reason,
+        input.requestId ?? null,
+        input.idempotencyRecordId ?? null,
+        input.businessKey,
       ],
     );
   }
@@ -995,11 +1028,17 @@ export class OrdersRepository {
           o.customer_id,
           o.order_code,
           o.status,
+          o.fulfillment_status,
+          o.fulfillment_type,
+          o.version::text,
           o.subtotal,
           o.total,
           o.shipping_zone_id,
           o.shipping_fee,
           o.discount_total,
+          o.tax_amount,
+          o.paid_amount,
+          o.refunded_amount,
           o.coupon_code,
           o.currency_code,
           o.note,
@@ -1068,11 +1107,17 @@ export class OrdersRepository {
           o.customer_id,
           o.order_code,
           o.status,
+          o.fulfillment_status,
+          o.fulfillment_type,
+          o.version::text,
           o.subtotal,
           o.total,
           o.shipping_zone_id,
           o.shipping_fee,
           o.discount_total,
+          o.tax_amount,
+          o.paid_amount,
+          o.refunded_amount,
           o.coupon_code,
           o.currency_code,
           o.note,
@@ -1209,7 +1254,7 @@ export class OrdersRepository {
   async listOrderStatusHistory(orderId: string): Promise<OrderStatusHistoryRecord[]> {
     const result = await this.databaseService.db.query<OrderStatusHistoryRecord>(
       `
-        SELECT id, old_status, new_status, changed_by, note, created_at
+        SELECT id, from_status, to_status, actor_id, reason, created_at
         FROM order_status_history
         WHERE order_id = $1
         ORDER BY created_at ASC
@@ -1219,11 +1264,48 @@ export class OrdersRepository {
     return result.rows;
   }
 
+  async listCommercialDetailEvidence(storeId: string, orderId: string) {
+    const [fulfillment, payment, reservations, audit] = await Promise.all([
+      this.databaseService.db.query<{
+        from_status:string|null;to_status:string;command:string;reason:string|null;
+        actor_type:string;created_at:Date;
+      }>(`SELECT from_status,to_status,command,reason,actor_type,created_at
+          FROM fulfillment_status_history WHERE store_id=$1 AND order_id=$2
+          ORDER BY created_at,id`,[storeId,orderId]),
+      this.databaseService.db.query<{
+        from_status:string|null;to_status:string;command:string;reason:string|null;
+        actor_type:string;created_at:Date;
+      }>(`SELECT from_status,to_status,command,reason,actor_type,created_at
+          FROM payment_status_history WHERE store_id=$1 AND order_id=$2
+          ORDER BY created_at,id`,[storeId,orderId]),
+      this.databaseService.db.query<{
+        id:string;variant_id:string;quantity:number;status:string;reserved_at:Date;
+        expires_at:Date;released_at:Date|null;consumed_at:Date|null;release_reason:string|null;
+      }>(`SELECT id,variant_id,quantity,status,reserved_at,expires_at,released_at,consumed_at,release_reason
+          FROM inventory_reservations WHERE store_id=$1 AND order_id=$2
+          ORDER BY reserved_at,id`,[storeId,orderId]),
+      this.databaseService.db.query<{
+        action:string;actor_type:string;before_snapshot:Record<string,unknown>|null;
+        after_snapshot:Record<string,unknown>|null;metadata:Record<string,unknown>;created_at:Date;
+      }>(`SELECT action,actor_type,before_snapshot,after_snapshot,metadata,created_at
+          FROM audit_logs
+          WHERE store_id=$1 AND (target_id=$2 OR target_id IN (
+            SELECT id FROM payments WHERE store_id=$1 AND order_id=$2))
+          ORDER BY created_at,id`,[storeId,orderId]),
+    ]);
+    return { fulfillment:fulfillment.rows, payment:payment.rows,
+      reservations:reservations.rows, audit:audit.rows };
+  }
+
   async findPaymentByOrderId(orderId: string): Promise<{
     id: string;
     method: string;
     status: string;
     amount: string;
+    paid_amount: string;
+    refunded_amount: string;
+    currency_code: string;
+    version: string;
     receipt_url: string | null;
     store_payment_method_id: string | null;
     payment_method_catalog_id: string | null;
@@ -1243,12 +1325,17 @@ export class OrdersRepository {
     reviewed_by: string | null;
     reviewed_at: Date | null;
     review_note: string | null;
+    expires_at: Date | null;
   } | null> {
     const result = await this.databaseService.db.query<{
       id: string;
       method: string;
       status: string;
       amount: string;
+      paid_amount: string;
+      refunded_amount: string;
+      currency_code: string;
+      version: string;
       receipt_url: string | null;
       store_payment_method_id: string | null;
       payment_method_catalog_id: string | null;
@@ -1268,15 +1355,17 @@ export class OrdersRepository {
       reviewed_by: string | null;
       reviewed_at: Date | null;
       review_note: string | null;
+      expires_at: Date | null;
     }>(
       `
-        SELECT id, method, status, amount, receipt_url,
+        SELECT id, method, status, amount, paid_amount, refunded_amount, currency_code,
+               version::text, receipt_url,
                store_payment_method_id, payment_method_catalog_id,
                payment_method_code, payment_method_name,
                account_name, account_number, phone_number, iban,
                instructions_ar, instructions_en, payer_reference,
                payer_receipt_url, payer_receipt_media_asset_id, payer_note,
-               customer_submitted_at, reviewed_by, reviewed_at, review_note
+               customer_submitted_at, reviewed_by, reviewed_at, review_note, expires_at
         FROM payments
         WHERE order_id = $1
         LIMIT 1
@@ -1286,8 +1375,12 @@ export class OrdersRepository {
     return result.rows[0] ?? null;
   }
 
-  async findCustomerById(storeId: string, customerId: string): Promise<CustomerSummaryRow | null> {
-    const result = await this.databaseService.db.query<CustomerSummaryRow>(
+  async findCustomerById(
+    storeId: string,
+    customerId: string,
+    db?: Queryable,
+  ): Promise<CustomerSummaryRow | null> {
+    const result = await (db ?? this.databaseService.db).query<CustomerSummaryRow>(
       `
         SELECT id, full_name, phone
         FROM customers
@@ -1309,11 +1402,17 @@ export class OrdersRepository {
           o.customer_id,
           o.order_code,
           o.status,
+          o.fulfillment_status,
+          o.fulfillment_type,
+          o.version::text,
           o.subtotal,
           o.total,
           o.shipping_zone_id,
           o.shipping_fee,
           o.discount_total,
+          o.tax_amount,
+          o.paid_amount,
+          o.refunded_amount,
           o.coupon_code,
           o.currency_code,
           o.note,
@@ -1359,8 +1458,9 @@ export class OrdersRepository {
     storeId: string,
     customerId: string,
     addressId: string,
+    db?: Queryable,
   ): Promise<CustomerAddressSummaryRow | null> {
-    const result = await this.databaseService.db.query<CustomerAddressSummaryRow>(
+    const result = await (db ?? this.databaseService.db).query<CustomerAddressSummaryRow>(
       `
         SELECT id, customer_id, address_line, city, area, notes, is_default
         FROM customer_addresses
@@ -1390,9 +1490,10 @@ export class OrdersRepository {
       couponCode: string | null;
       note: string | null;
       shippingAddress: Record<string, unknown>;
+      expectedVersion: number;
     },
-  ): Promise<void> {
-    await db.query(
+  ): Promise<boolean> {
+    const result=await db.query(
       `
         UPDATE orders
         SET customer_id = $3,
@@ -1406,9 +1507,13 @@ export class OrdersRepository {
             coupon_code = $11,
             note = $12,
             shipping_address = $13::jsonb,
+            version = version + 1,
             updated_at = NOW()
         WHERE id = $1
           AND store_id = $2
+          AND status = 'new'
+          AND fulfillment_status = 'unfulfilled'
+          AND version = $14
       `,
       [
         input.orderId,
@@ -1424,8 +1529,10 @@ export class OrdersRepository {
         input.couponCode,
         input.note,
         JSON.stringify(input.shippingAddress),
+        input.expectedVersion,
       ],
     );
+    return (result.rowCount??0)===1;
   }
 
   async deleteOrderItems(
@@ -1449,37 +1556,31 @@ export class OrdersRepository {
       storeId: string;
       method: PaymentMethod;
       amount: number;
+      expectedStatus: string;
+      expectedVersion: number;
     },
-  ): Promise<void> {
-    await db.query(
+  ): Promise<boolean> {
+    const result = await db.query(
       `
         UPDATE payments
         SET method = $3,
             amount = $4,
+            amount_yer = $4,
+            payment_method_code = $3,
+            payment_method_name = CASE $3 WHEN 'cod' THEN 'Cash on delivery'
+              WHEN 'transfer' THEN 'Bank transfer' ELSE $3 END,
+            version = version + 1,
+            status_version = status_version + 1,
             updated_at = NOW()
         WHERE order_id = $1
           AND store_id = $2
+          AND status = $5
+          AND version = $6::bigint
       `,
-      [input.orderId, input.storeId, input.method, input.amount],
+      [input.orderId, input.storeId, input.method, input.amount,
+       input.expectedStatus, input.expectedVersion],
     );
-  }
-
-  async updateOrderStatus(
-    db: Queryable,
-    input: { orderId: string; storeId: string; nextStatus: OrderStatus },
-  ): Promise<OrderRecord | null> {
-    const result = await db.query<OrderRecord>(
-      `
-        UPDATE orders
-        SET status = $3,
-            updated_at = NOW()
-        WHERE id = $1
-          AND store_id = $2
-        RETURNING ${ORDER_RETURNING_FIELDS}
-      `,
-      [input.orderId, input.storeId, input.nextStatus],
-    );
-    return result.rows[0] ?? null;
+    return (result.rowCount ?? 0) === 1;
   }
 
   async decreaseVariantStock(

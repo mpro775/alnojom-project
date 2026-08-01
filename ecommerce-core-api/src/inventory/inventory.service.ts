@@ -4,11 +4,11 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { v4 as uuidv4 } from 'uuid';
 import { AuditService } from '../audit/audit.service';
 import type { AuthUser } from '../auth/interfaces/auth-user.interface';
 import type { RequestContextData } from '../common/utils/request-context.util';
 import { OutboxService } from '../messaging/outbox.service';
-import { WebhooksService } from '../webhooks/webhooks.service';
 import type {
   InventoryMovementType,
   InventoryReservationStatus,
@@ -111,7 +111,6 @@ export class InventoryService {
     private readonly inventoryRepository: InventoryRepository,
     private readonly outboxService: OutboxService,
     private readonly auditService: AuditService,
-    private readonly webhooksService: WebhooksService,
   ) {}
 
   async releaseExpiredReservations(storeId: string): Promise<number> {
@@ -126,7 +125,7 @@ export class InventoryService {
       await this.outboxService.enqueueInTransaction(db, {
         aggregateType: 'inventory-reservations',
         aggregateId: storeId,
-        eventType: 'inventory.reservation_expired',
+        eventType: 'inventory.expired',
         payload: { storeId, count: released, source: 'inventory_reservations_worker' },
       });
     }
@@ -161,6 +160,8 @@ export class InventoryService {
       expiresAt: Date;
       items: InventoryOrderItemInput[];
       metadata?: Record<string, unknown>;
+      actorId?: string | null;
+      actorType?: 'customer' | 'admin' | 'system' | 'worker' | 'integration';
     },
   ): Promise<void> {
     for (const item of input.items) {
@@ -187,6 +188,30 @@ export class InventoryService {
 
       if (!reserved) {
         throw new UnprocessableEntityException(`Insufficient reservable stock for SKU ${item.sku}`);
+      }
+      const reservation=await db.query<{id:string;warehouse_id:string|null;quantity:number}>(
+        `SELECT id,warehouse_id,quantity FROM inventory_reservations
+         WHERE store_id=$1 AND order_id=$2 AND variant_id=$3 FOR UPDATE`,
+        [input.storeId,input.orderId,item.variantId]);
+      if(reservation.rows[0]) {
+        await db.query(
+        `INSERT INTO inventory_reservation_events (
+          id,reservation_id,store_id,order_id,variant_id,warehouse_id,event_type,quantity,
+          from_status,to_status,actor_id,actor_type,reason_code,business_key)
+         VALUES ($1,$2,$3,$4,$5,$6,'created',$7,NULL,'active',$8,$9,'order_reservation_created',$10)
+         ON CONFLICT (store_id,business_key) DO NOTHING`,
+        [uuidv4(),reservation.rows[0].id,input.storeId,input.orderId,item.variantId,
+          reservation.rows[0].warehouse_id,reservation.rows[0].quantity,input.actorId??null,
+          input.actorType??'system',`reservation:${reservation.rows[0].id}:created`]);
+        await this.outboxService.enqueueInTransaction(db, {
+          aggregateType: 'inventory-reservation',
+          aggregateId: reservation.rows[0].id,
+          eventType: 'inventory.reserved',
+          deduplicationKey: `inventory.reserved:${reservation.rows[0].id}`,
+          payload: { storeId: input.storeId, orderId: input.orderId,
+            reservationId: reservation.rows[0].id, variantId: item.variantId,
+            quantity: reservation.rows[0].quantity },
+        });
       }
     }
   }
@@ -234,6 +259,21 @@ export class InventoryService {
         if (signal) {
           lowStockSignals.push(signal);
         }
+      }
+      const reservation = await db.query<{ id: string }>(
+        `SELECT id FROM inventory_reservations
+         WHERE store_id = $1 AND order_id = $2 AND variant_id = $3 AND status = 'consumed'`,
+        [input.storeId, input.orderId, item.variantId],
+      );
+      if (reservation.rows[0]) {
+        await this.outboxService.enqueueInTransaction(db, {
+          aggregateType: 'inventory-reservation', aggregateId: reservation.rows[0].id,
+          eventType: 'inventory.consumed',
+          deduplicationKey: `inventory.consumed:${reservation.rows[0].id}`,
+          payload: { storeId: input.storeId, orderId: input.orderId,
+            reservationId: reservation.rows[0].id, variantId: item.variantId,
+            quantity: item.quantity },
+        });
       }
     }
 
@@ -320,15 +360,28 @@ export class InventoryService {
 
   async releaseOrderReservations(
     db: Queryable,
-    input: { storeId: string; orderId: string; reason: string },
+    input: { storeId: string; orderId: string; reason: string; actorId?: string | null;
+      actorType?: 'customer' | 'admin' | 'system' | 'worker' | 'integration' },
   ): Promise<void> {
+    const active=await db.query<{id:string;variant_id:string;warehouse_id:string|null;quantity:number}>(
+      `SELECT id,variant_id,warehouse_id,quantity FROM inventory_reservations
+       WHERE store_id=$1 AND order_id=$2 AND status='active' FOR UPDATE`,
+      [input.storeId,input.orderId]);
     const released = await this.inventoryRepository.releaseOrderReservations(db, input);
+    for(const row of active.rows)await db.query(
+      `INSERT INTO inventory_reservation_events (
+        id,reservation_id,store_id,order_id,variant_id,warehouse_id,event_type,quantity,
+        from_status,to_status,actor_id,actor_type,reason_code,business_key)
+       VALUES ($1,$2,$3,$4,$5,$6,'released',$7,'active','released',$8,$9,$10,$11)
+       ON CONFLICT (store_id,business_key) DO NOTHING`,
+      [uuidv4(),row.id,input.storeId,input.orderId,row.variant_id,row.warehouse_id,row.quantity,
+        input.actorId??null,input.actorType??'system',input.reason,`reservation:${row.id}:release`]);
     if (released > 0) {
       await this.outboxService.enqueueInTransaction(db, {
         aggregateType: 'order',
         aggregateId: input.orderId,
-        eventType: 'inventory.reservation_released',
-        deduplicationKey: `inventory.reservation_released:${input.orderId}:${input.reason}`,
+        eventType: 'inventory.released',
+        deduplicationKey: `inventory.released:${input.orderId}`,
         payload: { ...input, released },
       });
     }
@@ -459,15 +512,21 @@ export class InventoryService {
     }
 
     await this.logInventoryAdjustment(currentUser, variantId, quantityDelta, input.note, context);
-    await this.webhooksService.dispatchEvent(currentUser.storeId, 'inventory.updated', {
-      variantId: result.snapshot.variant_id,
-      productId: result.snapshot.product_id,
-      sku: result.snapshot.sku,
-      stockQuantity: result.snapshot.stock_quantity,
-      reservedQuantity: result.snapshot.reserved_quantity,
-      availableQuantity: result.snapshot.available_quantity,
-      lowStockThreshold: result.snapshot.low_stock_threshold,
-      reason: 'inventory.adjusted',
+    await this.outboxService.enqueueStandalone({
+      aggregateType: 'product-variant',
+      aggregateId: result.snapshot.variant_id,
+      eventType: 'inventory.updated',
+      payload: {
+        storeId: currentUser.storeId,
+        variantId: result.snapshot.variant_id,
+        productId: result.snapshot.product_id,
+        sku: result.snapshot.sku,
+        stockQuantity: result.snapshot.stock_quantity,
+        reservedQuantity: result.snapshot.reserved_quantity,
+        availableQuantity: result.snapshot.available_quantity,
+        lowStockThreshold: result.snapshot.low_stock_threshold,
+        reason: 'inventory.adjusted',
+      },
     });
 
     return this.mapVariantSnapshot(result.snapshot);
@@ -523,15 +582,21 @@ export class InventoryService {
       ]);
     }
 
-    await this.webhooksService.dispatchEvent(currentUser.storeId, 'inventory.updated', {
-      variantId: snapshot.variant_id,
-      productId: snapshot.product_id,
-      sku: snapshot.sku,
-      stockQuantity: snapshot.stock_quantity,
-      reservedQuantity: snapshot.reserved_quantity,
-      availableQuantity: snapshot.available_quantity,
-      lowStockThreshold: snapshot.low_stock_threshold,
-      reason: 'inventory.low_stock_threshold_updated',
+    await this.outboxService.enqueueStandalone({
+      aggregateType: 'product-variant',
+      aggregateId: snapshot.variant_id,
+      eventType: 'inventory.updated',
+      payload: {
+        storeId: currentUser.storeId,
+        variantId: snapshot.variant_id,
+        productId: snapshot.product_id,
+        sku: snapshot.sku,
+        stockQuantity: snapshot.stock_quantity,
+        reservedQuantity: snapshot.reserved_quantity,
+        availableQuantity: snapshot.available_quantity,
+        lowStockThreshold: snapshot.low_stock_threshold,
+        reason: 'inventory.low_stock_threshold_updated',
+      },
     });
 
     return this.mapVariantSnapshot(snapshot);
@@ -550,10 +615,8 @@ export class InventoryService {
     });
 
     return {
-      items: data.rows.map((row) => this.mapMovement(row)),
-      total: data.total,
-      page,
-      limit,
+      data: data.rows.map((row) => this.mapMovement(row)),
+      meta: { page, limit, total: data.total, totalPages: Math.ceil(data.total/limit) },
     };
   }
 
@@ -570,10 +633,8 @@ export class InventoryService {
     });
 
     return {
-      items: data.rows.map((row) => this.mapReservation(row)),
-      total: data.total,
-      page,
-      limit,
+      data: data.rows.map((row) => this.mapReservation(row)),
+      meta: { page, limit, total: data.total, totalPages: Math.ceil(data.total/limit) },
     };
   }
 

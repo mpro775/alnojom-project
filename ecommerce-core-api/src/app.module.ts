@@ -35,6 +35,7 @@ import { LoyaltyModule } from './loyalty/loyalty.module';
 import { AffiliatesModule } from './affiliates/affiliates.module';
 import { SupportModule } from './support/support.module';
 import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
+import { CommercialModule } from './commercial/commercial.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -49,6 +50,7 @@ import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
       },
     ]),
     DatabaseModule,
+    CommercialModule,
     EmailModule,
     ObservabilityModule,
     AuditModule,

@@ -8,7 +8,7 @@ import { AuditService } from '../audit/audit.service';
 import type { AuthUser } from '../auth/interfaces/auth-user.interface';
 import type { RequestContextData } from '../common/utils/request-context.util';
 import type { CartItemSnapshot } from '../orders/orders.repository';
-import { WebhooksService } from '../webhooks/webhooks.service';
+import { MetricsService } from '../observability/metrics.service';
 import { AdvancedOffersService } from '../advanced-offers/advanced-offers.service';
 import { DISCOUNT_TYPES, type DiscountType } from './constants/discount.constants';
 import { OFFER_TARGET_TYPES, type OfferTargetType } from './constants/offer.constants';
@@ -21,6 +21,7 @@ import type { UpdateOfferDto } from './dto/update-offer.dto';
 import { PromotionsRepository, type CouponRecord, type OfferRecord } from './promotions.repository';
 import { CHECKOUT_ERROR_CODES, CheckoutDomainException } from '../checkout/checkout.errors';
 import { OutboxService } from '../messaging/outbox.service';
+import { allocateLargestRemainder } from '../commercial/money-allocation';
 
 export interface CouponResponse {
   id: string;
@@ -82,6 +83,8 @@ export interface PromotionComputationResult {
   offerId: string | null;
   offerDiscount: number;
   totalDiscount: number;
+  offerEligibleLineIds: string[];
+  couponEligibleLineIds: string[];
 }
 
 @Injectable()
@@ -89,9 +92,9 @@ export class PromotionsService {
   constructor(
     private readonly promotionsRepository: PromotionsRepository,
     private readonly auditService: AuditService,
-    private readonly webhooksService: WebhooksService,
     private readonly advancedOffersService: AdvancedOffersService,
     private readonly outboxService: OutboxService,
+    private readonly metricsService: MetricsService,
   ) {}
 
   async createCoupon(
@@ -173,12 +176,19 @@ export class PromotionsService {
     }
 
     await this.log('promotions.coupon_updated', currentUser, couponId, context);
-    await this.webhooksService.dispatchEvent(currentUser.storeId, 'coupon.updated', {
-      couponId: updated.id,
-      code: updated.code,
-      isActive: updated.is_active,
-      discountType: updated.discount_type,
-      discountValue: Number(updated.discount_value),
+    await this.outboxService.enqueueStandalone({
+      aggregateType: 'coupon',
+      aggregateId: updated.id,
+      eventType: 'coupon.updated',
+      deduplicationKey: `coupon.updated:${updated.id}:${updated.updated_at.toISOString()}`,
+      payload: {
+        storeId: currentUser.storeId,
+        couponId: updated.id,
+        code: updated.code,
+        isActive: updated.is_active,
+        discountType: updated.discount_type,
+        discountValue: Number(updated.discount_value),
+      },
     });
     return this.mapCoupon(updated);
   }
@@ -268,8 +278,8 @@ export class PromotionsService {
   ): Promise<PromotionComputationResult> {
     const productIds = [...new Set(input.items.map((item) => item.product_id))];
     const [offers, inlineProductOffers] = await Promise.all([
-      this.promotionsRepository.listActiveOffers(storeId, input.at),
-      this.promotionsRepository.listActiveInlineProductOffers(storeId, productIds, input.at),
+      this.promotionsRepository.listActiveOffers(storeId, input.at, db),
+      this.promotionsRepository.listActiveInlineProductOffers(storeId, productIds, input.at, db),
     ]);
 
     const inlineOfferByProductId = new Map(
@@ -313,6 +323,7 @@ export class PromotionsService {
       remainingItems,
       remainingSubtotal,
       input.at,
+      db,
     );
     const bestExternalOffer =
       advancedOffer.discount > basicOffer.discount
@@ -339,16 +350,50 @@ export class PromotionsService {
       throw new CheckoutDomainException(CHECKOUT_ERROR_CODES.COUPON_INVALID, 'Coupon not found');
     }
 
+    const externalEligibleItems = advancedOffer.discount > basicOffer.discount
+      ? remainingItems
+      : this.offerEligibleItems(
+          offers.find((offer) => offer.id === basicOffer.offerId) ?? null,
+          remainingItems,
+        );
+    const offerEligibleLineIds = [...new Set([
+      ...input.items
+        .filter((item) => productIdsWithInlineOffer.has(item.product_id))
+        .map((item) => item.cart_item_id),
+      ...externalEligibleItems.map((item) => item.cart_item_id),
+    ])];
+    const offerAllocation = allocateLargestRemainder(
+      input.items
+        .filter((item) => offerEligibleLineIds.includes(item.cart_item_id))
+        .map((item) => ({
+          key: item.cart_item_id,
+          amount: Number(item.unit_price) * item.quantity,
+        })),
+      offerDiscount,
+    );
+
+    const couponEligibleItems = coupon
+      ? input.items.filter((item) => this.isCouponLineEligible(coupon, item))
+      : [];
+    const couponEligibleLineIds = couponEligibleItems.map((item) => item.cart_item_id);
+    const couponBase = Number(couponEligibleItems.reduce(
+      (sum, item) => sum + Math.max(
+        0,
+        Number(item.unit_price) * item.quantity - (offerAllocation.get(item.cart_item_id) ?? 0),
+      ),
+      0,
+    ).toFixed(2));
+
     let couponDiscount = 0;
     let couponId: string | null = null;
     let couponCode: string | null = null;
 
     if (coupon) {
-      this.assertCouponUsable(coupon, input.subtotal - offerDiscount, input.at);
+      this.assertCouponUsable(coupon, couponBase, input.at);
       couponDiscount = this.promotionsRepository.calculateDiscount(
         Number(coupon.discount_value),
         coupon.discount_type,
-        input.subtotal - offerDiscount,
+        couponBase,
       );
       if (coupon.maximum_discount !== null) {
         couponDiscount = Math.min(couponDiscount, Number(coupon.maximum_discount));
@@ -366,7 +411,33 @@ export class PromotionsService {
       offerId,
       offerDiscount,
       totalDiscount,
+      offerEligibleLineIds,
+      couponEligibleLineIds,
     };
+  }
+
+  private offerEligibleItems(
+    offer: OfferRecord | null,
+    items: CartItemSnapshot[],
+  ): CartItemSnapshot[] {
+    if (!offer || offer.target_type === 'cart') return items;
+    if (offer.target_type === 'product') {
+      return items.filter((item) => item.product_id === offer.target_product_id);
+    }
+    return items.filter((item) => item.category_id === offer.target_category_id);
+  }
+
+  private isCouponLineEligible(coupon: CouponRecord, item: CartItemSnapshot): boolean {
+    if (coupon.excluded_product_ids.includes(item.product_id)) return false;
+    if (item.category_id && coupon.excluded_category_ids.includes(item.category_id)) return false;
+    if (coupon.included_product_ids.length > 0 && !coupon.included_product_ids.includes(item.product_id)) {
+      return false;
+    }
+    if (coupon.included_category_ids.length > 0 &&
+        (!item.category_id || !coupon.included_category_ids.includes(item.category_id))) {
+      return false;
+    }
+    return true;
   }
 
   async increaseCouponUsageInTransaction(
@@ -383,6 +454,35 @@ export class PromotionsService {
     if (!success) {
       throw new BadRequestException('Coupon usage limit reached');
     }
+  }
+
+  async applyCouponInTransaction(
+    db: Parameters<PromotionsRepository['findCouponByCodeForCheckout']>[0],
+    storeId: string,
+    input: ApplyCouponDto,
+  ): Promise<CouponApplyResult> {
+    const coupon = await this.promotionsRepository.findCouponByCodeForCheckout(
+      db,
+      storeId,
+      input.code.trim().toUpperCase(),
+    );
+    if (!coupon) throw new NotFoundException('Coupon not found');
+    this.assertCouponUsable(coupon, input.subtotal, new Date());
+    let discount = this.promotionsRepository.calculateDiscount(
+      Number(coupon.discount_value),
+      coupon.discount_type,
+      input.subtotal,
+    );
+    if (coupon.maximum_discount !== null) {
+      discount = Math.min(discount, Number(coupon.maximum_discount));
+    }
+    return {
+      couponId: coupon.id,
+      code: coupon.code,
+      discount,
+      subtotal: input.subtotal,
+      isFreeShipping: coupon.is_free_shipping,
+    };
   }
 
   async consumeCouponInTransaction(
@@ -403,9 +503,15 @@ export class PromotionsService {
       productIds: string[];
       categoryIds: string[];
     },
-  ): Promise<void> {
+  ): Promise<string> {
     try {
       const usage = await this.promotionsRepository.consumeCoupon(db, input);
+      if (!usage.created) {
+        this.metricsService.incrementCounter('coupon_duplicate_consume_replay_total', {
+          store_id: input.storeId,
+        });
+        return usage.id;
+      }
       await this.outboxService.enqueueInTransaction(db, {
         aggregateType: 'coupon-usage',
         aggregateId: usage.id,
@@ -420,6 +526,7 @@ export class PromotionsService {
           currencyCode: input.currencyCode,
         },
       });
+      return usage.id;
     } catch (error) {
       const code = error instanceof Error ? error.message : 'COUPON_INVALID';
       if (code === 'COUPON_USAGE_LIMIT_REACHED') {
@@ -450,15 +557,22 @@ export class PromotionsService {
   ): Promise<boolean> {
     const reversed = await this.promotionsRepository.reverseCouponUsage(db, input);
     if (reversed) {
+      this.metricsService.incrementCounter('coupon_reversal_total', { store_id: input.storeId });
       await this.outboxService.enqueueInTransaction(db, {
-        aggregateType: 'order',
-        aggregateId: input.orderId,
+        aggregateType: 'coupon-usage',
+        aggregateId: reversed.usageId,
         eventType: 'coupon.reversed',
         deduplicationKey: `coupon.reversed:${input.orderId}`,
         payload: input,
       });
+      await this.auditService.log({
+        action: 'coupon.usage_reversed', storeId: input.storeId,
+        storeUserId: null, targetType: 'coupon_usage', targetId: reversed.usageId,
+        beforeSnapshot: { status: 'consumed' }, afterSnapshot: { status: 'reversed' },
+        metadata: { orderId: input.orderId, couponId: reversed.couponId, reason: input.reason },
+      }, db);
     }
-    return reversed;
+    return Boolean(reversed);
   }
 
   private validateDiscountType(discountType: string): void {

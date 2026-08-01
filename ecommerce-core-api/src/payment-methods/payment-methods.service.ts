@@ -186,8 +186,11 @@ export class PaymentMethodsService {
     return await this.mapStore(updated!);
   }
 
-  async listStorefront(storeId: string): Promise<StorefrontPaymentMethodResponse[]> {
-    return (await this.repository.listStorefront(storeId)).map((method) =>
+  async listStorefront(
+    storeId: string,
+    db?: Parameters<PaymentMethodsRepository['listStorefront']>[1],
+  ): Promise<StorefrontPaymentMethodResponse[]> {
+    return (await this.repository.listStorefront(storeId, db)).map((method) =>
       this.mapStorefront(method),
     );
   }
@@ -196,15 +199,16 @@ export class PaymentMethodsService {
     storeId: string,
     storePaymentMethodId?: string,
     legacyMethod?: string,
+    db?: Parameters<PaymentMethodsRepository['listStorefront']>[1],
   ): Promise<PaymentMethodSnapshot> {
     let method: StorePaymentMethodRecord | null = null;
     if (storePaymentMethodId) {
-      method = await this.repository.findEnabledStoreById(storeId, storePaymentMethodId);
+      method = await this.repository.findEnabledStoreById(storeId, storePaymentMethodId, db);
     } else if (legacyMethod) {
       const paymentMethodCode = legacyMethod === 'transfer' ? 'bank_transfer' : legacyMethod;
-      const catalogMethod = await this.repository.findCatalogByCode(paymentMethodCode);
+      const catalogMethod = await this.repository.findCatalogByCode(paymentMethodCode, db);
       if (catalogMethod) {
-        method = await this.repository.findStoreByCatalogId(storeId, catalogMethod.id);
+        method = await this.repository.findStoreByCatalogId(storeId, catalogMethod.id, db);
         if (method && (!method.is_enabled || !method.catalog_is_enabled)) {
           method = null;
         }

@@ -6,7 +6,6 @@ import {
 import { AuditService } from '../audit/audit.service';
 import type { AuthUser } from '../auth/interfaces/auth-user.interface';
 import type { RequestContextData } from '../common/utils/request-context.util';
-import { WebhooksService } from '../webhooks/webhooks.service';
 import type { CreateLoyaltyAdjustmentDto } from './dto/create-loyalty-adjustment.dto';
 import type { ListLoyaltyLedgerQueryDto } from './dto/list-loyalty-ledger-query.dto';
 import type {
@@ -71,7 +70,6 @@ export class LoyaltyService {
   constructor(
     private readonly loyaltyRepository: LoyaltyRepository,
     private readonly auditService: AuditService,
-    private readonly webhooksService: WebhooksService,
     private readonly outboxService: OutboxService,
   ) {}
 
@@ -350,9 +348,11 @@ export class LoyaltyService {
       },
     });
 
-    await this.webhooksService.dispatchEvent(currentUser.storeId, 'loyalty.adjustment.created', {
-      customerId,
-      pointsDelta,
+    await this.outboxService.enqueueStandalone({
+      aggregateType: 'loyalty-wallet',
+      aggregateId: customerId,
+      eventType: 'loyalty.adjustment.created',
+      payload: { storeId: currentUser.storeId, customerId, pointsDelta },
     });
     return this.mapWallet(wallet);
   }
@@ -420,6 +420,35 @@ export class LoyaltyService {
       pointsRedeemed: Math.min(normalizedPoints, steppedPoints),
       discountAmount: Math.min(finalDiscount, input.totalBeforeDiscount, maxByPercent),
     };
+  }
+
+  async getRulesByStoreIdInTransaction(
+    db: Queryable,
+    storeId: string,
+  ): Promise<LoyaltyRuleResponse[]> {
+    const program = await this.ensureProgramInTransaction(db, storeId);
+    let rules = await this.loyaltyRepository.listEarnRules(storeId, db);
+    if (rules.length === 0) {
+      rules = await this.loyaltyRepository.replaceEarnRules(db, storeId, program.id, [
+        {
+          name: 'Default earn rule',
+          ruleType: 'order_percent',
+          earnRate: 1,
+          minOrderAmount: 0,
+          isActive: true,
+          priority: 100,
+        },
+      ]);
+    }
+    return rules.map((rule) => ({
+      id: rule.id,
+      name: rule.name,
+      ruleType: rule.rule_type,
+      earnRate: Number(rule.earn_rate),
+      minOrderAmount: Number(rule.min_order_amount),
+      isActive: rule.is_active,
+      priority: rule.priority,
+    }));
   }
 
   async previewRedemptionInTransaction(
@@ -561,7 +590,7 @@ export class LoyaltyService {
       return;
     }
 
-    const rules = await this.loyaltyRepository.listEarnRules(input.storeId);
+    const rules = await this.loyaltyRepository.listEarnRules(input.storeId, db);
     const activeRules = rules.filter((rule) => rule.is_active);
     if (activeRules.length === 0) {
       return;
@@ -589,7 +618,7 @@ export class LoyaltyService {
     const holdDays = this.integerEnv('LOYALTY_EARN_HOLD_DAYS', 14, 0, 365);
     const availableAt = new Date(Date.now() + holdDays * 24 * 60 * 60 * 1000);
 
-    await this.loyaltyRepository.insertLedgerEntry(db, {
+    const earnEntry = await this.loyaltyRepository.insertLedgerEntry(db, {
       storeId: input.storeId,
       customerId: order.customer_id,
       walletId: wallet.id,
@@ -606,6 +635,14 @@ export class LoyaltyService {
       status: 'pending',
       balanceBefore: wallet.available_points,
       availableAt,
+    });
+
+    await this.outboxService.enqueueInTransaction(db, {
+      aggregateType: 'loyalty-ledger', aggregateId: earnEntry.id,
+      eventType: 'loyalty.earned_pending',
+      deduplicationKey: `loyalty.earned_pending:${earnEntry.id}`,
+      payload: { storeId: input.storeId, orderId: input.orderId,
+        customerId: order.customer_id, ledgerEntryId: earnEntry.id, points },
     });
 
     await this.loyaltyRepository.setOrderLoyalty(db, {
@@ -656,7 +693,7 @@ export class LoyaltyService {
           lifetimeEarnedPoints: wallet.lifetime_earned_points,
           lifetimeRedeemedPoints: wallet.lifetime_redeemed_points - pointsToReturn,
         });
-        await this.loyaltyRepository.insertLedgerEntry(db, {
+        const reversal = await this.loyaltyRepository.insertLedgerEntry(db, {
           storeId: input.storeId,
           customerId: order.customer_id,
           walletId: wallet.id,
@@ -672,6 +709,14 @@ export class LoyaltyService {
           businessKey: `ledger:${redemption.id}:reverse`,
           balanceBefore: wallet.available_points,
           sourceLedgerId: redemption.id,
+        });
+        await this.outboxService.enqueueInTransaction(db, {
+          aggregateType: 'loyalty-ledger', aggregateId: reversal.id,
+          eventType: 'loyalty.redeem_reversed',
+          deduplicationKey: `loyalty.redeem_reversed:${redemption.id}`,
+          payload: { storeId: input.storeId, orderId: input.orderId,
+            customerId: order.customer_id, sourceLedgerId: redemption.id,
+            reversalLedgerId: reversal.id, points: pointsToReturn },
         });
         await db.query(
           `UPDATE loyalty_ledger_entries SET status = 'reversed', reversed_at = NOW()
@@ -711,7 +756,7 @@ export class LoyaltyService {
             lifetimeRedeemedPoints: wallet.lifetime_redeemed_points,
           });
         }
-        await this.loyaltyRepository.insertLedgerEntry(db, {
+        const reversal = await this.loyaltyRepository.insertLedgerEntry(db, {
           storeId: input.storeId,
           customerId: order.customer_id,
           walletId: wallet.id,
@@ -728,6 +773,14 @@ export class LoyaltyService {
           balanceBefore: wallet.available_points,
           sourceLedgerId: earn.id,
         });
+        await this.outboxService.enqueueInTransaction(db, {
+          aggregateType: 'loyalty-ledger', aggregateId: reversal.id,
+          eventType: 'loyalty.earn_reversed',
+          deduplicationKey: `loyalty.earn_reversed:${earn.id}`,
+          payload: { storeId: input.storeId, orderId: input.orderId,
+            customerId: order.customer_id, sourceLedgerId: earn.id,
+            reversalLedgerId: reversal.id, points: pointsToRemove },
+        });
         await db.query(
           `UPDATE loyalty_ledger_entries SET status = 'reversed', reversed_at = NOW()
            WHERE id = $1 AND status <> 'reversed'`,
@@ -739,11 +792,17 @@ export class LoyaltyService {
 
   async publishWalletUpdated(storeId: string, customerId: string): Promise<void> {
     const wallet = await this.ensureWallet(storeId, customerId);
-    await this.webhooksService.dispatchEvent(storeId, 'loyalty.wallet.updated', {
-      customerId: wallet.customer_id,
-      availablePoints: wallet.available_points,
-      lifetimeEarnedPoints: wallet.lifetime_earned_points,
-      lifetimeRedeemedPoints: wallet.lifetime_redeemed_points,
+    await this.outboxService.enqueueStandalone({
+      aggregateType: 'loyalty-wallet',
+      aggregateId: wallet.id,
+      eventType: 'loyalty.wallet.updated',
+      payload: {
+        storeId,
+        customerId: wallet.customer_id,
+        availablePoints: wallet.available_points,
+        lifetimeEarnedPoints: wallet.lifetime_earned_points,
+        lifetimeRedeemedPoints: wallet.lifetime_redeemed_points,
+      },
     });
   }
 
@@ -777,6 +836,14 @@ export class LoyaltyService {
            WHERE id = $1 AND status = 'available'`,
           [entry.id, wallet.available_points, nextBalance],
         );
+        await this.outboxService.enqueueInTransaction(db, {
+          aggregateType: 'loyalty-ledger', aggregateId: entry.id,
+          eventType: 'loyalty.earned_available',
+          deduplicationKey: `loyalty.earned_available:${entry.id}`,
+          payload: { storeId: entry.store_id, orderId: entry.order_id,
+            customerId: entry.customer_id, ledgerEntryId: entry.id,
+            points: entry.points_delta },
+        });
       }
       return entries.length;
     });
@@ -793,6 +860,7 @@ export class LoyaltyService {
         FROM loyalty_programs
         WHERE store_id = $1
         LIMIT 1
+        FOR SHARE
       `,
       [storeId],
     );

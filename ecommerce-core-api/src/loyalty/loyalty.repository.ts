@@ -138,13 +138,14 @@ export class LoyaltyRepository {
     return result.rows[0] as LoyaltyProgramRecord;
   }
 
-  async listEarnRules(storeId: string): Promise<LoyaltyEarnRuleRecord[]> {
-    const result = await this.databaseService.db.query<LoyaltyEarnRuleRecord>(
+  async listEarnRules(storeId: string, db?: Queryable): Promise<LoyaltyEarnRuleRecord[]> {
+    const result = await (db ?? this.databaseService.db).query<LoyaltyEarnRuleRecord>(
       `
         SELECT id, store_id, program_id, name, rule_type, earn_rate, min_order_amount, is_active, priority
         FROM loyalty_earn_rules
         WHERE store_id = $1
         ORDER BY priority ASC, created_at ASC
+        ${db ? 'FOR SHARE' : ''}
       `,
       [storeId],
     );

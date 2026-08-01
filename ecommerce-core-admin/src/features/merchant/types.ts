@@ -1,3 +1,5 @@
+import type { components } from '../../api/generated/openapi';
+
 export type TeamRole =
   | 'general_manager'
   | 'order_manager'
@@ -392,17 +394,10 @@ export interface PresignedMediaUpload {
   maxFileSizeBytes: number;
 }
 
-export type OrderStatus =
-  | 'new'
-  | 'confirmed'
-  | 'preparing'
-  | 'out_for_delivery'
-  | 'completed'
-  | 'cancelled'
-  | 'returned';
+export type OrderStatus = components['schemas']['OrderSummaryDto']['status'];
 
 export type PaymentMethod = string;
-export type PaymentStatus = 'pending' | 'under_review' | 'approved' | 'rejected' | 'refunded';
+export type PaymentStatus = components['schemas']['PaymentDto']['status'];
 export type ManualPaymentMethodType = 'cod' | 'wallet' | 'bank_transfer' | 'exchange_transfer' | 'custom_manual';
 
 export interface PaymentMethodCatalogItem {
@@ -546,106 +541,10 @@ export interface StorePaymentMethod {
   catalogMethod: PaymentMethodCatalogItem;
 }
 
-export interface Payment {
-  id: string;
-  storeId: string;
-  orderId: string;
-  method: PaymentMethod;
-  status: PaymentStatus;
-  amount: number;
-  storePaymentMethodId: string | null;
-  paymentMethodCatalogId: string | null;
-  paymentMethodCode: string | null;
-  paymentMethodName: string | null;
-  accountName: string | null;
-  accountNumber: string | null;
-  phoneNumber: string | null;
-  iban: string | null;
-  instructionsAr: string | null;
-  instructionsEn: string | null;
-  payerReference: string | null;
-  payerReceiptUrl: string | null;
-  payerReceiptMediaAssetId: string | null;
-  payerNote: string | null;
-  customerSubmittedAt: string | null;
-  receiptUrl: string | null;
-  receiptMediaAssetId: string | null;
-  reviewedAt: string | null;
-  reviewedBy: string | null;
-  reviewNote: string | null;
-  customerUploadedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface PaymentWithOrder extends Payment {
-  orderCode: string;
-  orderStatus: string;
-  orderTotal: number;
-}
-
-export interface Order {
-  id: string;
-  orderCode: string;
-  status: OrderStatus;
-  subtotal: number;
-  total: number;
-  currencyCode: string;
-  note: string | null;
-  createdAt: string;
-  updatedAt: string;
-  customer: {
-    id: string | null;
-    name: string | null;
-    phone: string | null;
-  };
-  paymentMethod: PaymentMethod | null;
-  paymentMethodCode: string | null;
-  paymentMethodName: string | null;
-  paymentStatus: PaymentStatus | null;
-}
-
-export interface OrderDetail extends Order {
-  items: Array<{
-    id: string;
-    productId: string;
-    variantId: string;
-    title: string;
-    sku: string;
-    unitPrice: number;
-    quantity: number;
-    lineTotal: number;
-  }>;
-  timeline: Array<{
-    from: string | null;
-    to: string;
-    note: string | null;
-    createdAt: string;
-  }>;
-  payment: {
-    id: string;
-    method: string;
-    status: string;
-    amount: number;
-    receiptUrl: string | null;
-    paymentMethodCode: string | null;
-    paymentMethodName: string | null;
-    accountName: string | null;
-    accountNumber: string | null;
-    phoneNumber: string | null;
-    iban: string | null;
-    instructionsAr: string | null;
-    instructionsEn: string | null;
-    payerReference: string | null;
-    payerReceiptUrl: string | null;
-    payerReceiptMediaAssetId: string | null;
-    payerNote: string | null;
-    customerSubmittedAt: string | null;
-    reviewedBy: string | null;
-    reviewedAt: string | null;
-    reviewNote: string | null;
-  } | null;
-}
+export type Payment = components['schemas']['PaymentDto'];
+export type PaymentWithOrder = components['schemas']['PaymentWithOrderDto'];
+export type Order = components['schemas']['OrderSummaryDto'];
+export type OrderDetail = components['schemas']['OrderDetailDto'];
 
 export type CustomerGender = 'male' | 'female' | null;
 
@@ -1297,13 +1196,8 @@ export interface AnalyticsShipments {
   topAreas: Array<{ area: string; orders: number }>;
 }
 
-export interface PaginatedOrders {
-  items: Order[];
-  total: number;
-  page: number;
-  limit: number;
-  statusCounts: Record<OrderStatus, number>;
-}
+export type PaginatedOrders = components['schemas']['PaginatedOrdersDto'];
+export type PaginatedPayments = components['schemas']['PaginatedPaymentsDto'];
 
 export interface ManualOrderProduct {
   variantId: string;
@@ -1319,10 +1213,8 @@ export interface ManualOrderProduct {
 }
 
 export interface ManualOrderProductSearchResponse {
-  items: ManualOrderProduct[];
-  total: number;
-  page: number;
-  limit: number;
+  data: ManualOrderProduct[];
+  meta: { page: number; limit: number; total: number; totalPages: number };
 }
 
 export interface ShippingZone {

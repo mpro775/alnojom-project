@@ -18,7 +18,11 @@ export class CheckoutOrchestratorService {
     idempotencyKey: string;
     payload: unknown;
     work: (context: AtomicCheckoutContext) => Promise<AtomicCheckoutResult<T>>;
-  }): Promise<{ status: number; body: T; replayed: boolean }> {
+  }): Promise<{
+    status: number;
+    body: T | { code: string; message: string };
+    replayed: boolean;
+  }> {
     return this.transaction.execute({
       storeId: input.storeId,
       actorId: input.actorId,
@@ -33,4 +37,3 @@ export class CheckoutOrchestratorService {
     });
   }
 }
-

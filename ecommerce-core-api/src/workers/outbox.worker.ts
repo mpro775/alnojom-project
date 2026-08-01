@@ -16,9 +16,15 @@ async function bootstrap(): Promise<void> {
   const outboxService = app.get(OutboxService);
   const webhooksService = app.get(WebhooksService);
 
-  await outboxService.recoverStaleProcessing();
+  let lastRecoveryAt = 0;
+  const recoveryIntervalMs = Number(process.env.OUTBOX_STALE_RECOVERY_INTERVAL_MS ?? 30_000);
 
   const run = async (): Promise<void> => {
+    if (Date.now() - lastRecoveryAt >= recoveryIntervalMs) {
+      const recovered = await outboxService.recoverStaleProcessing();
+      lastRecoveryAt = Date.now();
+      if (recovered > 0) logger.warn(`Recovered stale Outbox rows: ${recovered}`);
+    }
     const publishedCount = await outboxService.publishPending(
       Number(process.env.OUTBOX_BATCH_SIZE ?? 100),
       (event) => webhooksService.processOutboxEvent(event),

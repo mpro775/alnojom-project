@@ -1,4 +1,4 @@
-import { HttpException, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { DatabaseService } from '../database/database.service';
 import { IdempotencyService } from '../idempotency/idempotency.service';
@@ -22,7 +22,7 @@ export class CheckoutTransactionService {
     idempotencyKey: string;
     requestHash: string;
     work: (context: AtomicCheckoutContext) => Promise<AtomicCheckoutResult<T>>;
-  }): Promise<{ status: number; body: T; replayed: boolean }> {
+  }): Promise<{ status: number; body: T | { code: string; message: string }; replayed: boolean }> {
     const client = await this.databaseService.db.connect();
     let committedFailure: { status: number; body: { code: string; message: string } } | null = null;
     try {
@@ -43,7 +43,7 @@ export class CheckoutTransactionService {
         });
         return {
           status: claim.responseStatus,
-          body: claim.responseBody as T,
+          body: claim.responseBody as T | { code: string; message: string },
           replayed: true,
         };
       }
@@ -100,7 +100,7 @@ export class CheckoutTransactionService {
       store_id: input.storeId,
       reason: committedFailure.body.code,
     });
-    throw new HttpException(committedFailure.body, committedFailure.status);
+    return { status: committedFailure.status, body: committedFailure.body, replayed: false };
   }
 
   private async rollbackQuietly(client: PoolClient): Promise<void> {

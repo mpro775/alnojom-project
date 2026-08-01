@@ -93,7 +93,11 @@ export class OutboxService {
          AND locked_at < NOW() - ($1::int * INTERVAL '1 second')`,
       [timeoutSeconds],
     );
-    return result.rowCount ?? 0;
+    const recovered = result.rowCount ?? 0;
+    if (recovered > 0) {
+      this.metricsService.incrementCounter('outbox_stale_recovered_total', undefined, recovered);
+    }
+    return recovered;
   }
 
   async claimBatch(limit: number, workerId: string): Promise<ClaimedOutboxEvent[]> {
@@ -161,12 +165,18 @@ export class OutboxService {
     await this.publisher.publish({
       routingKey: row.event_type,
       payload: {
+        eventId: row.id,
         outboxId: row.id,
         eventType: row.event_type,
         aggregateId: row.aggregate_id,
         aggregateType: row.aggregate_type,
+        occurredAt: row.created_at.toISOString(),
         timestamp: row.created_at.toISOString(),
         schemaVersion: 1,
+        requestId: typeof row.payload.requestId === 'string' ? row.payload.requestId : null,
+        actor: row.payload.actor ?? null,
+        deduplicationKey: row.deduplication_key,
+        payload: row.payload,
         data: row.payload,
       },
       headers: {

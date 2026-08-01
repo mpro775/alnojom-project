@@ -157,9 +157,15 @@ export class StorefrontController {
     description: 'Opaque client-generated key (16-200 characters) scoped to storefront.checkout',
   })
   @ApiOkResponse({ description: 'Checkout active cart and create order' })
-  async checkout(@Req() request: Request, @Body() body: CheckoutDto) {
+  async checkout(
+    @Req() request: Request,
+    @Body() body: CheckoutDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
     const idempotencyKey = this.extractIdempotencyKey(request);
-    return this.storefrontService.checkout(request, body, idempotencyKey);
+    const result = await this.storefrontService.checkout(request, body, idempotencyKey);
+    response.status(result.status);
+    return result.body;
   }
 
   @Post('checkout/quote')

@@ -11,6 +11,11 @@ export interface PaymentRecord {
   method: PaymentMethod;
   status: PaymentStatus;
   amount: string;
+  paid_amount: string;
+  refunded_amount: string;
+  currency_code: string;
+  version: string;
+  submission_version: number;
   store_payment_method_id: string | null;
   payment_method_catalog_id: string | null;
   payment_method_code: string | null;
@@ -32,6 +37,7 @@ export interface PaymentRecord {
   reviewed_by: string | null;
   review_note: string | null;
   customer_uploaded_at: Date | null;
+  expires_at: Date | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -44,24 +50,27 @@ export interface PaymentWithOrder extends PaymentRecord {
   customer_id: string | null;
   customer_name: string | null;
   customer_phone: string | null;
+  fulfillment_status: string;
 }
 
 const PAYMENT_SELECT_FIELDS = `
-  id, store_id, order_id, method, status, amount,
+  id, store_id, order_id, method, status, amount, paid_amount, refunded_amount,
+  currency_code, version::text, submission_version,
   store_payment_method_id, payment_method_catalog_id, payment_method_code, payment_method_name,
   account_name, account_number, phone_number, iban, instructions_ar, instructions_en,
   payer_reference, payer_receipt_url, payer_receipt_media_asset_id, payer_note, customer_submitted_at,
   receipt_url, receipt_media_asset_id, reviewed_at, reviewed_by, review_note,
-  customer_uploaded_at, created_at, updated_at
+  customer_uploaded_at, expires_at, created_at, updated_at
 `;
 
 const PAYMENT_SELECT_FIELDS_PREFIXED = `
-  p.id, p.store_id, p.order_id, p.method, p.status, p.amount,
+  p.id, p.store_id, p.order_id, p.method, p.status, p.amount, p.paid_amount, p.refunded_amount,
+  p.currency_code, p.version::text, p.submission_version,
   p.store_payment_method_id, p.payment_method_catalog_id, p.payment_method_code, p.payment_method_name,
   p.account_name, p.account_number, p.phone_number, p.iban, p.instructions_ar, p.instructions_en,
   p.payer_reference, p.payer_receipt_url, p.payer_receipt_media_asset_id, p.payer_note, p.customer_submitted_at,
   p.receipt_url, p.receipt_media_asset_id, p.reviewed_at, p.reviewed_by, p.review_note,
-  p.customer_uploaded_at, p.created_at, p.updated_at
+  p.customer_uploaded_at, p.expires_at, p.created_at, p.updated_at
 `;
 
 @Injectable()
@@ -137,8 +146,8 @@ export class PaymentsRepository {
 
   async listByStore(
     storeId: string,
-    filters?: { orderId?: string; status?: PaymentStatus },
-  ): Promise<PaymentWithOrder[]> {
+    filters: { orderId?: string; status?: PaymentStatus; limit: number; offset: number },
+  ): Promise<{ rows: PaymentWithOrder[]; total: number }> {
     const conditions: string[] = ['p.store_id = $1'];
     const values: unknown[] = [storeId];
     let paramIndex = 2;
@@ -155,10 +164,13 @@ export class PaymentsRepository {
       paramIndex++;
     }
 
+    values.push(filters.limit,filters.offset);
+    const limitParameter=`$${values.length-1}`; const offsetParameter=`$${values.length}`;
     const result = await this.databaseService.db.query<PaymentWithOrder>(
       `
         SELECT ${PAYMENT_SELECT_FIELDS_PREFIXED},
-               o.order_code, o.status AS order_status, o.total AS order_total,
+               o.order_code, o.status AS order_status, o.fulfillment_status,
+               o.total AS order_total,
                o.currency_code AS order_currency_code,
                o.customer_id,
                c.full_name AS customer_name, c.phone AS customer_phone
@@ -166,19 +178,23 @@ export class PaymentsRepository {
         INNER JOIN orders o ON o.id = p.order_id
         LEFT JOIN customers c ON c.id = o.customer_id
         WHERE ${conditions.join(' AND ')}
-        ORDER BY p.created_at DESC
+        ORDER BY p.created_at DESC,p.id DESC LIMIT ${limitParameter} OFFSET ${offsetParameter}
       `,
       values,
     );
 
-    return result.rows;
+    const countValues=values.slice(0,-2);
+    const count=await this.databaseService.db.query<{total:string}>(
+      `SELECT COUNT(*)::text total FROM payments p WHERE ${conditions.join(' AND ')}`,countValues);
+    return {rows:result.rows,total:Number(count.rows[0]?.total??'0')};
   }
 
   async listPendingReview(storeId: string): Promise<PaymentWithOrder[]> {
     const result = await this.databaseService.db.query<PaymentWithOrder>(
       `
         SELECT ${PAYMENT_SELECT_FIELDS_PREFIXED},
-               o.order_code, o.status AS order_status, o.total AS order_total,
+               o.order_code, o.status AS order_status, o.fulfillment_status,
+               o.total AS order_total,
                o.currency_code AS order_currency_code,
                o.customer_id,
                c.full_name AS customer_name, c.phone AS customer_phone
@@ -327,7 +343,8 @@ export class PaymentsRepository {
     const result = await this.databaseService.db.query<PaymentWithOrder>(
       `
         SELECT ${PAYMENT_SELECT_FIELDS_PREFIXED},
-               o.order_code, o.status AS order_status, o.total AS order_total,
+               o.order_code, o.status AS order_status, o.fulfillment_status,
+               o.total AS order_total,
                o.currency_code AS order_currency_code,
                o.customer_id,
                c.full_name AS customer_name, c.phone AS customer_phone
@@ -338,6 +355,22 @@ export class PaymentsRepository {
         LIMIT 1
       `,
       [storeId, paymentId],
+    );
+    return result.rows[0] ?? null;
+  }
+
+  async findWithOrderByOrderId(storeId: string, orderId: string): Promise<PaymentWithOrder | null> {
+    const result = await this.databaseService.db.query<PaymentWithOrder>(
+      `SELECT ${PAYMENT_SELECT_FIELDS_PREFIXED},
+              o.order_code, o.status AS order_status, o.fulfillment_status,
+              o.total AS order_total, o.currency_code AS order_currency_code,
+              o.customer_id, c.full_name AS customer_name, c.phone AS customer_phone
+       FROM payments p
+       INNER JOIN orders o ON o.id = p.order_id AND o.store_id = p.store_id
+       LEFT JOIN customers c ON c.id = o.customer_id
+       WHERE p.store_id = $1 AND p.order_id = $2
+       LIMIT 1`,
+      [storeId, orderId],
     );
     return result.rows[0] ?? null;
   }

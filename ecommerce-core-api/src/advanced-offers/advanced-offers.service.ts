@@ -127,8 +127,9 @@ export class AdvancedOffersService {
     items: CartItemSnapshot[],
     subtotal: number,
     at: Date,
+    db?: Parameters<AdvancedOffersRepository['listActive']>[2],
   ): Promise<AdvancedOfferDiscountResult> {
-    const offers = await this.advancedOffersRepository.listActive(storeId, at);
+    const offers = await this.advancedOffersRepository.listActive(storeId, at, db);
     let winner: AdvancedOfferDiscountResult = { offerId: null, discount: 0 };
 
     for (const offer of offers) {
