@@ -1,0 +1,2 @@
+"use client";
+export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) { return <html lang="ar" dir="rtl"><body><main style={{ maxWidth: 720, margin: "80px auto", padding: 24, fontFamily: "sans-serif", textAlign: "center" }}><h1>تعذّر تشغيل المتجر</h1><p>Storefront failed to start.</p><button onClick={reset}>إعادة المحاولة / Retry</button></main></body></html>; }

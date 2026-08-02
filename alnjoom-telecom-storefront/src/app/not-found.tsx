@@ -1,0 +1,2 @@
+import Link from "next/link";
+export default function NotFound() { return <main id="main-content" className="container-shell section-space"><div className="surface-card p-10 text-center"><p className="text-6xl font-black text-brand">404</p><h1 className="mt-4 text-2xl font-black">الصفحة غير موجودة</h1><p className="mt-2 text-muted">Page not found</p><Link className="mt-6 inline-flex min-h-11 items-center rounded-lg bg-brand px-5 font-bold text-white" href="/">العودة للرئيسية</Link></div></main>; }

@@ -1,0 +1,3 @@
+import { redirect } from "next/navigation";
+import { isLocale, localePath } from "@/lib/i18n/locales";
+export default async function Lookup({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<{ orderCode?: string; phone?: string }> }) { const [{ locale: raw }, query] = await Promise.all([params, searchParams]); const locale = isLocale(raw) ? raw : "ar"; const code = query.orderCode?.trim(); if (!code) redirect(localePath(locale, "/track-order")); redirect(`${localePath(locale, `/track-order/${encodeURIComponent(code)}`)}?phone=${encodeURIComponent(query.phone?.trim() ?? "")}`); }
