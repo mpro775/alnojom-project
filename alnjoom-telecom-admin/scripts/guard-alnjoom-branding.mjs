@@ -5,18 +5,19 @@ const root = process.cwd();
 const compatibilityAllowlist = new Set([
   'src/compatibility/legacy-admin-compat.ts',
 ]);
-const extensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.json', '.md', '.html']);
+const extensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.json', '.md', '.html', '.example']);
 const forbidden = [
   /General Ecommerce/iu,
   /Ecommerce Core/iu,
   /general-ecommerce/iu,
   /ecommerce[_-]core/iu,
+  /ecommerce[_\-. ]?core/iu,
   /\bMerchant\b/u,
   /\bmerchant\b/iu,
   /لوحة التاجر/u,
   /متجرك/u,
 ];
-const roots = ['src', 'package.json', 'package-lock.json', 'index.html', 'README.md'];
+const roots = ['src', 'package.json', 'package-lock.json', 'index.html', 'README.md', '.env.example', '.env.production.example'];
 const violations = [];
 
 for (const target of roots) {

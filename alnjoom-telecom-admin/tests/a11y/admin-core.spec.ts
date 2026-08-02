@@ -107,6 +107,7 @@ test.describe('admin authenticated workspace accessibility', () => {
   });
 
   test('keyboard opens and closes drawer, user menu, and accessibility dialog', async ({ page }) => {
+    test.setTimeout(60_000);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/admin');
 

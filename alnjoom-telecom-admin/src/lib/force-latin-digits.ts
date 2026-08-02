@@ -2,7 +2,7 @@ const DEFAULT_LOCALE = 'en-US';
 
 declare global {
   interface Window {
-    __ecommerceCoreLatinDigitsPatched__?: boolean;
+    __alnjoomLatinDigitsPatched__?: boolean;
   }
 }
 
@@ -40,7 +40,7 @@ export function enforceLatinDigitsInLocaleFormatting(): void {
     return;
   }
 
-  if (window.__ecommerceCoreLatinDigitsPatched__) {
+  if (window.__alnjoomLatinDigitsPatched__) {
     return;
   }
 
@@ -76,5 +76,5 @@ export function enforceLatinDigitsInLocaleFormatting(): void {
     return originalDateToLocaleTimeString.call(this, normalizeLocales(locales), options);
   };
 
-  window.__ecommerceCoreLatinDigitsPatched__ = true;
+  window.__alnjoomLatinDigitsPatched__ = true;
 }
