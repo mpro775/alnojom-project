@@ -99,6 +99,23 @@ export class OrderTransitionService {
               state.order.fulfillment_status,input.actor.id,input.actor.type,reason,
               input.context?.requestId??null,claim.recordId,
               `fulfillment:${input.orderId}:order_cancelled`]);
+
+          await this.outbox.enqueueInTransaction(client, {
+            aggregateType: 'fulfillment',
+            aggregateId: input.orderId,
+            eventType: 'fulfillment.cancelled',
+            deduplicationKey: `fulfillment.cancelled:${input.orderId}:order_cancelled`,
+            payload: {
+              orderId: input.orderId,
+              fulfillmentType: state.order.fulfillment_type,
+              fromStatus: state.order.fulfillment_status,
+              toStatus: 'cancelled',
+              reason: reason ?? 'order_cancelled',
+              actorType: input.actor.type,
+              actorId: input.actor.id,
+              occurredAt: new Date().toISOString(),
+            },
+          });
         }
       }
 

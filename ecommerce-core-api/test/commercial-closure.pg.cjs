@@ -291,6 +291,35 @@ describe('Phase 3 + Phase 5 mandatory commercial closure on real PostgreSQL', { 
       AND event_type IN ('order.confirmed','order.cancelled')`, [orderId]), 1);
   });
 
+  test('cancel order during preparing generates exactly one fulfillment history and outbox event with deduplication', async () => {
+    const { orderId } = await makeOrder({ fulfillmentType: 'delivery' });
+    let version = await currentOrderVersion(orderId);
+    
+    await command(orderTransitions, { orderId, command: 'confirmOrder', expectedVersion: version });
+    
+    version = await currentOrderVersion(orderId);
+    await command(fulfillmentTransitions, { orderId, command: 'startPreparing', expectedVersion: version });
+
+    version = await currentOrderVersion(orderId);
+    const idempotencyKey = randomUUID();
+    const cancelInput = { orderId, command: 'cancelOrder', expectedVersion: version, reason: 'user requested cancel', idempotencyKey };
+    
+    await command(orderTransitions, cancelInput);
+
+    assert.equal(await scalar(`SELECT COUNT(*)::int value FROM fulfillment_status_history
+      WHERE order_id=$1 AND to_status='cancelled'`, [orderId]), 1);
+
+    assert.equal(await scalar(`SELECT COUNT(*)::int value FROM outbox_events
+      WHERE aggregate_id=$1 AND event_type='fulfillment.cancelled'`, [orderId]), 1);
+
+    await command(orderTransitions, cancelInput);
+
+    assert.equal(await scalar(`SELECT COUNT(*)::int value FROM fulfillment_status_history
+      WHERE order_id=$1 AND to_status='cancelled'`, [orderId]), 1);
+    assert.equal(await scalar(`SELECT COUNT(*)::int value FROM outbox_events
+      WHERE aggregate_id=$1 AND event_type='fulfillment.cancelled'`, [orderId]), 1);
+  });
+
   test('delivery path, COD collection, completion invariants, and duplicate completion', async () => {
     const { orderId, paymentId } = await makeOrder({ fulfillmentType: 'delivery' });
     let version = await currentOrderVersion(orderId);
@@ -305,7 +334,7 @@ describe('Phase 3 + Phase 5 mandatory commercial closure on real PostgreSQL', { 
     const completed = await command(orderTransitions,
       { orderId, command: 'completeOrder', expectedVersion: version });
     assert.equal(completed.status, 'completed');
-    await assert.rejects(() => command(orderTransitions,
+    await assert.rejects(async () => command(orderTransitions,
       { orderId, command: 'completeOrder', expectedVersion: Number(completed.version) }),
       (error) => ['ORDER_ALREADY_COMPLETED','ORDER_TRANSITION_NOT_ALLOWED'].includes(errorCode(error)));
     assert.equal(await scalar(`SELECT COUNT(*)::int value FROM inventory_reservations
@@ -323,7 +352,7 @@ describe('Phase 3 + Phase 5 mandatory commercial closure on real PostgreSQL', { 
         expectedVersion: await currentOrderVersion(orderId) });
     }
     const dispatchVersion = await currentOrderVersion(orderId);
-    await assert.rejects(() => command(fulfillmentTransitions, { orderId, command: 'dispatch',
+    await assert.rejects(async () => command(fulfillmentTransitions, { orderId, command: 'dispatch',
       expectedVersion: dispatchVersion }),
       (error) => errorCode(error) === 'FULFILLMENT_TRANSITION_NOT_ALLOWED');
     const result = await command(fulfillmentTransitions, { orderId, command: 'markFulfilled',
@@ -341,14 +370,14 @@ describe('Phase 3 + Phase 5 mandatory commercial closure on real PostgreSQL', { 
     }
     await command(fulfillmentTransitions, { orderId: delivery.orderId, command: 'markFailed',
       expectedVersion: await currentOrderVersion(delivery.orderId), reason: 'recipient unavailable' });
-    await assert.rejects(() => command(fulfillmentTransitions, { orderId: delivery.orderId,
+    await assert.rejects(async () => command(fulfillmentTransitions, { orderId: delivery.orderId,
       command: 'markFulfilled', expectedVersion: await currentOrderVersion(delivery.orderId) }),
       (error) => errorCode(error) === 'FULFILLMENT_TRANSITION_NOT_ALLOWED');
     await command(fulfillmentTransitions, { orderId: delivery.orderId, command: 'retryDispatch',
       expectedVersion: await currentOrderVersion(delivery.orderId), reason: 'recipient confirmed retry' });
     await command(fulfillmentTransitions, { orderId: delivery.orderId, command: 'markFulfilled',
       expectedVersion: await currentOrderVersion(delivery.orderId) });
-    await assert.rejects(() => command(fulfillmentTransitions, { orderId: delivery.orderId,
+    await assert.rejects(async () => command(fulfillmentTransitions, { orderId: delivery.orderId,
       command: 'startPreparing', expectedVersion: await currentOrderVersion(delivery.orderId) }),
       (error) => errorCode(error) === 'FULFILLMENT_TRANSITION_NOT_ALLOWED');
 
@@ -357,12 +386,12 @@ describe('Phase 3 + Phase 5 mandatory commercial closure on real PostgreSQL', { 
       expectedVersion: await currentOrderVersion(cancelled.orderId) });
     await command(fulfillmentTransitions, { orderId: cancelled.orderId, command: 'cancelFulfillment',
       expectedVersion: await currentOrderVersion(cancelled.orderId), reason: 'stock inspection failed' });
-    await assert.rejects(() => command(fulfillmentTransitions, { orderId: cancelled.orderId,
+    await assert.rejects(async () => command(fulfillmentTransitions, { orderId: cancelled.orderId,
       command: 'markReady', expectedVersion: await currentOrderVersion(cancelled.orderId) }),
       (error) => errorCode(error) === 'FULFILLMENT_TRANSITION_NOT_ALLOWED');
 
     const fresh = await makeOrder();
-    await assert.rejects(() => command(fulfillmentTransitions, { orderId: fresh.orderId,
+    await assert.rejects(async () => command(fulfillmentTransitions, { orderId: fresh.orderId,
       command: 'startPreparing', expectedVersion: await currentOrderVersion(fresh.orderId) }),
       (error) => errorCode(error) === 'FULFILLMENT_ORDER_NOT_CONFIRMED');
     assert.equal(await scalar(`SELECT COUNT(*)::int value FROM fulfillment_status_history
@@ -423,7 +452,7 @@ describe('Phase 3 + Phase 5 mandatory commercial closure on real PostgreSQL', { 
       { fulfillment: 'fulfilled', method: 'cod', payment: 'pending', code: 'ORDER_PAYMENT_GATE_NOT_SATISFIED' },
     ]) {
       const row = await fixture(input);
-      await assert.rejects(() => command(orderTransitions, { orderId: row.orderId,
+      await assert.rejects(async () => command(orderTransitions, { orderId: row.orderId,
         command: 'completeOrder', expectedVersion: await currentOrderVersion(row.orderId) }),
         (error) => errorCode(error) === input.code);
       assert.equal((await query('SELECT status FROM orders WHERE id=$1', [row.orderId])).rows[0].status, 'confirmed');
@@ -435,7 +464,7 @@ describe('Phase 3 + Phase 5 mandatory commercial closure on real PostgreSQL', { 
     await command(orderTransitions, { orderId: gated.orderId, command: 'confirmOrder',
       expectedVersion: await currentOrderVersion(gated.orderId) });
     const gateVersion = await currentOrderVersion(gated.orderId);
-    await assert.rejects(() => command(fulfillmentTransitions, { orderId: gated.orderId,
+    await assert.rejects(async () => command(fulfillmentTransitions, { orderId: gated.orderId,
       command: 'startPreparing', expectedVersion: gateVersion }),
       (error) => errorCode(error) === 'FULFILLMENT_PAYMENT_GATE_NOT_SATISFIED');
     await command(paymentTransitions, { paymentId: gated.paymentId, command: 'submitPaymentProof',
@@ -680,7 +709,7 @@ describe('Phase 3 + Phase 5 mandatory commercial closure on real PostgreSQL', { 
     const service = new OrderTransitionService(db, commercialIdempotency, invariants,
       failingInventory, promotions, loyalty, affiliates, audit, failingOutbox, metrics);
     const before = await query('SELECT status,version::text FROM orders WHERE id=$1', [orderId]);
-    await assert.rejects(() => command(service, { orderId, command: 'cancelOrder',
+    await assert.rejects(async () => command(service, { orderId, command: 'cancelOrder',
       expectedVersion: Number(before.rows[0].version), reason: 'failure injection' }),
       /injected outbox insert failure/u);
     const afterRow = (await query('SELECT status,version::text FROM orders WHERE id=$1', [orderId])).rows[0];
