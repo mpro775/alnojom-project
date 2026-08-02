@@ -1,5 +1,5 @@
--- Phase 3 + Phase 5 lifecycle and financial contracts.
--- Ambiguous commercial state is deliberately rejected before any schema mutation.
+-- Phase 3 + Phase 5 lifecycle and financial contracts (Step 2: Validation and Data Mutation)
+-- Ambiguous commercial state is deliberately rejected before data mutation.
 
 DO $$
 DECLARE
@@ -45,20 +45,9 @@ BEGIN
   END IF;
 END $$;
 
-ALTER TABLE orders
-  ADD COLUMN version BIGINT NOT NULL DEFAULT 1,
-  ADD COLUMN legacy_returned_at TIMESTAMPTZ,
-  ADD COLUMN legacy_return_note TEXT,
-  ADD COLUMN confirmed_at TIMESTAMPTZ,
-  ADD COLUMN completed_at TIMESTAMPTZ,
-  ADD COLUMN cancelled_at TIMESTAMPTZ,
-  ADD COLUMN tax_amount NUMERIC(14, 2) NOT NULL DEFAULT 0,
-  ADD COLUMN paid_amount NUMERIC(14, 2) NOT NULL DEFAULT 0,
-  ADD COLUMN refunded_amount NUMERIC(14, 2) NOT NULL DEFAULT 0;
-
 UPDATE orders
 SET legacy_returned_at = COALESCE(updated_at, created_at),
-    legacy_return_note = COALESCE(note, 'Historical returned state preserved by migration 100')
+    legacy_return_note = COALESCE(note, 'Historical returned state preserved by migration 101')
 WHERE status = 'returned';
 
 UPDATE orders
@@ -100,45 +89,6 @@ SET fulfillment_type = COALESCE(
       ELSE cancelled_at
     END;
 
-ALTER TABLE orders
-  ALTER COLUMN fulfillment_type SET NOT NULL,
-  ALTER COLUMN fulfillment_status SET DEFAULT 'unfulfilled',
-  DROP CONSTRAINT IF EXISTS orders_status_check,
-  DROP CONSTRAINT IF EXISTS orders_fulfillment_status_check,
-  DROP CONSTRAINT IF EXISTS orders_fulfillment_type_check,
-  ADD CONSTRAINT orders_status_check
-    CHECK (status IN ('new', 'confirmed', 'completed', 'cancelled')),
-  ADD CONSTRAINT orders_fulfillment_status_check
-    CHECK (fulfillment_status IN (
-      'unfulfilled', 'preparing', 'ready', 'out_for_delivery',
-      'fulfilled', 'failed', 'cancelled'
-    )),
-  ADD CONSTRAINT orders_fulfillment_type_check
-    CHECK (fulfillment_type IN ('delivery', 'pickup', 'external_shipping', 'manual_coordination')),
-  ADD CONSTRAINT orders_terminal_fulfillment_check CHECK (
-    (status <> 'completed' OR fulfillment_status = 'fulfilled')
-    AND (status <> 'cancelled' OR fulfillment_status = 'cancelled')
-  ),
-  ADD CONSTRAINT orders_commercial_money_check CHECK (
-    subtotal >= 0 AND shipping_fee >= 0 AND discount_total >= 0 AND tax_amount >= 0
-    AND total >= 0 AND paid_amount >= 0 AND refunded_amount >= 0
-    AND paid_amount <= total AND refunded_amount <= paid_amount
-  );
-
-CREATE INDEX idx_orders_store_lifecycle
-  ON orders (store_id, status, fulfillment_status, created_at DESC);
-
-ALTER TABLE payments
-  ADD COLUMN paid_amount NUMERIC(14, 2) NOT NULL DEFAULT 0,
-  ADD COLUMN refunded_amount NUMERIC(14, 2) NOT NULL DEFAULT 0,
-  ADD COLUMN currency_code VARCHAR(3),
-  ADD COLUMN version BIGINT NOT NULL DEFAULT 1,
-  ADD COLUMN submission_version INTEGER NOT NULL DEFAULT 0,
-  ADD COLUMN review_started_at TIMESTAMPTZ,
-  ADD COLUMN expires_at TIMESTAMPTZ,
-  ADD COLUMN collected_at TIMESTAMPTZ,
-  ADD COLUMN collection_reference TEXT;
-
 UPDATE payments p
 SET paid_amount = CASE WHEN p.status = 'approved' THEN p.amount ELSE 0 END,
     currency_code = COALESCE(o.currency_code, 'YER'),
@@ -150,28 +100,3 @@ SET paid_amount = CASE WHEN p.status = 'approved' THEN p.amount ELSE 0 END,
     review_started_at = CASE WHEN p.status = 'under_review' THEN COALESCE(p.customer_submitted_at, p.updated_at) END
 FROM orders o
 WHERE o.id = p.order_id AND o.store_id = p.store_id;
-
-ALTER TABLE payments
-  ALTER COLUMN currency_code SET NOT NULL,
-  DROP CONSTRAINT IF EXISTS payments_status_check,
-  ADD CONSTRAINT payments_status_check CHECK (status IN (
-    'pending', 'submitted', 'under_review', 'approved', 'rejected',
-    'expired', 'cancelled', 'partially_refunded', 'refunded'
-  )),
-  ADD CONSTRAINT payments_financial_projection_check CHECK (
-    amount >= 0 AND paid_amount >= 0 AND refunded_amount >= 0
-    AND paid_amount <= amount AND refunded_amount <= paid_amount
-  ),
-  ADD CONSTRAINT payments_status_financial_check CHECK (
-    (status <> 'approved' OR paid_amount > 0)
-    AND (status NOT IN ('pending', 'submitted', 'under_review', 'rejected', 'expired', 'cancelled')
-      OR refunded_amount = 0)
-    AND (status <> 'partially_refunded'
-      OR (refunded_amount > 0 AND refunded_amount < paid_amount))
-    AND (status <> 'refunded'
-      OR (paid_amount > 0 AND refunded_amount = paid_amount))
-  );
-
-CREATE INDEX idx_payments_expiration_claim
-  ON payments (status, expires_at, created_at)
-  WHERE status IN ('pending', 'submitted') AND expires_at IS NOT NULL;
