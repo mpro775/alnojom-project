@@ -181,7 +181,7 @@ export interface ProductVariant {
 }
 
 export type InventoryMovementType = 'adjustment' | 'sale' | 'return' | 'restock';
-export type InventoryReservationStatus = 'reserved' | 'released' | 'consumed';
+export type InventoryReservationStatus = 'active' | 'consumed' | 'released' | 'expired';
 
 export interface InventoryMovement {
   id: string;
@@ -233,17 +233,23 @@ export interface InventoryVariantSnapshot {
 }
 
 export interface PaginatedInventoryMovements {
-  items: InventoryMovement[];
-  total: number;
-  page: number;
-  limit: number;
+  data: InventoryMovement[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 export interface PaginatedInventoryReservations {
-  items: InventoryReservation[];
-  total: number;
-  page: number;
-  limit: number;
+  data: InventoryReservation[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 export interface Warehouse {
