@@ -8,8 +8,12 @@ import rtlPlugin from 'stylis-plugin-rtl';
 import { App } from './App';
 import { enforceLatinDigitsInLocaleFormatting } from './lib/force-latin-digits';
 import { useLocalStorageState } from './lib/use-local-storage-state';
-import { MerchantAccessibilitySettings } from './features/accessibility/merchant-accessibility-settings';
+import { AdminAccessibilitySettings } from './features/accessibility/admin-accessibility-settings';
 import { createAdminTheme } from './theme/theme';
+import {
+  ADMIN_STORAGE_KEYS,
+  LEGACY_ADMIN_STORAGE_KEYS,
+} from './compatibility/legacy-admin-compat';
 
 const cacheRtl = createCache({
   key: 'muirtl',
@@ -23,7 +27,11 @@ document.documentElement.setAttribute('lang', 'ar');
 document.body.setAttribute('dir', 'rtl');
 
 function Root() {
-  const [themeMode, setThemeMode] = useLocalStorageState('admin.theme.mode.v1', 'light');
+  const [themeMode, setThemeMode] = useLocalStorageState(
+    ADMIN_STORAGE_KEYS.themeMode,
+    'light',
+    [LEGACY_ADMIN_STORAGE_KEYS.themeMode],
+  );
 
   const mode = themeMode === 'dark' ? 'dark' : 'light';
   const theme = useMemo(() => createAdminTheme(mode), [mode]);
@@ -77,7 +85,7 @@ function Root() {
         themeMode={mode}
         onThemeModeChange={setThemeMode}
       />
-      <MerchantAccessibilitySettings />
+      <AdminAccessibilitySettings />
     </ThemeProvider>
   );
 }

@@ -25,7 +25,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import type { MerchantRequester } from '../../merchant-dashboard.types';
+import type { AdminRequester } from '../../admin-dashboard.types';
 import type {
   CustomerAddressResponse,
   ManagedCustomerDetails,
@@ -47,7 +47,7 @@ import {
 import { formatCommercialDate, formatCommercialMoney, newIdempotencyKey } from '../../../../lib/commercial-format';
 
 interface OrdersPanelProps {
-  request: MerchantRequester;
+  request: AdminRequester;
 }
 
 type OrdersMode = 'list' | 'detail' | 'create-manual' | 'edit-manual';

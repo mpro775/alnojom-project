@@ -18,7 +18,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 
-import type { MerchantRequester } from '../../merchant-dashboard.types';
+import type { AdminRequester } from '../../admin-dashboard.types';
 import { AppPage, DataTableWrapper, PageHeader, SectionCard } from '../../components/ui';
 import type {
   InventoryVariantSnapshot,
@@ -29,7 +29,7 @@ import type {
 } from '../../types';
 
 interface InventoryPanelProps {
-  request: MerchantRequester;
+  request: AdminRequester;
 }
 
 interface InventoryVariantOption {
@@ -113,11 +113,11 @@ export function InventoryPanel({ request }: InventoryPanelProps) {
     const quantityDelta = Number(adjustDelta);
 
     if (!variantId) {
-      setMessage({ text: 'معرّف المتغير مطلوب لتعديل المخزون', type: 'error' });
+      setMessage({ text: 'معرّف خيار المنتج مطلوب لتعديل المخزون', type: 'error' });
       return;
     }
     if (!warehouseId) {
-      setMessage({ text: 'يجب اختيار المستودع لتعديل المخزون', type: 'error' });
+      setMessage({ text: 'يجب اختيار المخزن لتعديل المخزون', type: 'error' });
       return;
     }
     if (!Number.isInteger(quantityDelta) || quantityDelta === 0) {
@@ -152,7 +152,7 @@ export function InventoryPanel({ request }: InventoryPanelProps) {
     const lowStockThreshold = Number(thresholdValue);
 
     if (!variantId) {
-      setMessage({ text: 'معرّف المتغير مطلوب لتحديث حد التنبيه', type: 'error' });
+      setMessage({ text: 'معرّف خيار المنتج مطلوب لتحديث حد التنبيه', type: 'error' });
       return;
     }
     if (!Number.isInteger(lowStockThreshold) || lowStockThreshold < 0) {
@@ -203,7 +203,7 @@ export function InventoryPanel({ request }: InventoryPanelProps) {
 
   async function saveWarehousePriorityOrder(): Promise<void> {
     if (warehousePriority.length === 0) {
-      setMessage({ text: 'لا توجد مستودعات لحفظ ترتيب السحب.', type: 'error' });
+      setMessage({ text: 'لا توجد مخازن لحفظ ترتيب السحب.', type: 'error' });
       return;
     }
 
@@ -215,7 +215,7 @@ export function InventoryPanel({ request }: InventoryPanelProps) {
         body: JSON.stringify({ warehouseIds: warehousePriority.map((item) => item.id) }),
       });
       setWarehousePriority(updated ?? []);
-      setMessage({ text: 'تم حفظ أولوية السحب من المستودعات بنجاح.', type: 'success' });
+      setMessage({ text: 'تم حفظ أولوية السحب من المخازن بنجاح.', type: 'success' });
     } catch (error) {
       setMessage({
         text: error instanceof Error ? error.message : 'تعذر حفظ ترتيب أولوية السحب',
@@ -273,7 +273,7 @@ export function InventoryPanel({ request }: InventoryPanelProps) {
                       </Box>
                     )}
                     renderInput={(params) => (
-                      <TextField {...params} label="اختر المتغير بالاسم أو SKU" fullWidth />
+                      <TextField {...params} label="اختر خيار المنتج بالاسم أو SKU" fullWidth />
                     )}
                   />
                   <Box sx={{ display: 'flex', gap: 2 }}>
@@ -285,7 +285,7 @@ export function InventoryPanel({ request }: InventoryPanelProps) {
                       getOptionLabel={(option) => option.nameAr || option.name}
                       isOptionEqualToValue={(option, value) => option.id === value.id}
                       renderInput={(params) => (
-                        <TextField {...params} label="اختر المستودع" fullWidth />
+                        <TextField {...params} label="اختر المخزن" fullWidth />
                       )}
                       sx={{ minWidth: 200 }}
                     />
@@ -324,7 +324,7 @@ export function InventoryPanel({ request }: InventoryPanelProps) {
                       </Box>
                     )}
                     renderInput={(params) => (
-                      <TextField {...params} label="اختر المتغير بالاسم أو SKU" fullWidth />
+                      <TextField {...params} label="اختر خيار المنتج بالاسم أو SKU" fullWidth />
                     )}
                   />
                   <TextField size="small" label="الحد الأدنى للتنبيه" type="number" inputProps={{ min: 0, step: 1 }} fullWidth value={thresholdValue} onChange={(event) => setThresholdValue(event.target.value)} />
@@ -339,7 +339,7 @@ export function InventoryPanel({ request }: InventoryPanelProps) {
           <DataTableWrapper>
             <Box sx={{ p: 2, bgcolor: 'background.default', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
               <Box>
-                <Typography variant="h6" fontWeight={800}>أولوية السحب من المستودعات</Typography>
+                <Typography variant="h6" fontWeight={800}>أولوية السحب من المخازن</Typography>
                 <Typography variant="caption" color="text.secondary">
                   الترتيب من الأعلى إلى الأدنى. السحب يتم تلقائيًا وفق هذا التسلسل عند خصم المخزون.
                 </Typography>
@@ -353,7 +353,7 @@ export function InventoryPanel({ request }: InventoryPanelProps) {
                 <TableHead>
                   <TableRow>
                     <TableCell sx={{ fontWeight: 700 }}>الترتيب</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>المستودع</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>المخزن</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>الكود</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>الحالة</TableCell>
                     <TableCell align="left" sx={{ fontWeight: 700 }}>تحكم</TableCell>
@@ -363,7 +363,7 @@ export function InventoryPanel({ request }: InventoryPanelProps) {
                   {warehousePriority.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
-                        <Typography color="text.secondary">لا توجد مستودعات متاحة.</Typography>
+                        <Typography color="text.secondary">لا توجد مخازن متاحة.</Typography>
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -413,7 +413,7 @@ export function InventoryPanel({ request }: InventoryPanelProps) {
               <Table size="small">
                 <TableHead>
                   <TableRow sx={{ bgcolor: 'background.paper' }}>
-                    <TableCell sx={{ fontWeight: 700 }}>المنتج / المتغير</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>المنتج / خيار المنتج</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>SKU</TableCell>
                     <TableCell align="center" sx={{ fontWeight: 700 }}>المتوفر / المحجوز</TableCell>
                     <TableCell align="center" sx={{ fontWeight: 700 }}>المخزون الفعلي</TableCell>

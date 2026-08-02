@@ -20,7 +20,7 @@ export interface StoreRolePreset {
   allowedPermissions: string[];
 }
 
-export interface MerchantUser {
+export interface AdminUser {
   id: string;
   storeId: string;
   email: string;
@@ -30,17 +30,17 @@ export interface MerchantUser {
   sessionId: string;
 }
 
-export interface MerchantSession {
+export interface AdminSession {
   apiBaseUrl: string;
   accessToken: string;
   refreshToken: string;
-  user: MerchantUser;
+  user: AdminUser;
 }
 
 export interface AuthResult {
   accessToken: string;
   refreshToken: string;
-  user: MerchantUser;
+  user: AdminUser;
 }
 
 export interface StoreSettings {
@@ -1583,7 +1583,7 @@ export type SupportTicketScope = 'b2b' | 'b2c';
 export type SupportTicketPriority = 'low' | 'medium' | 'high' | 'urgent';
 
 export type SupportTicketSource =
-  | 'merchant_portal'
+  | 'admin_portal'
   | 'customer_portal'
   | 'system';
 

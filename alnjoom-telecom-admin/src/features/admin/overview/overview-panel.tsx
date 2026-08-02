@@ -13,8 +13,8 @@ import {
   Typography,
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
-import type { MerchantSession, StoreSettings } from '../types';
-import type { MerchantRequester } from '../merchant-dashboard.types';
+import type { AdminSession, StoreSettings } from '../types';
+import type { AdminRequester } from '../admin-dashboard.types';
 import { ADMIN_TOKENS } from '../../../theme/tokens';
 import {
   AppPage,
@@ -43,7 +43,7 @@ import shippingAnimation from './animated-icons/shipping.json';
 import stockAlertAnimation from './animated-icons/stock-alert.json';
 import storeAnimation from './animated-icons/store.json';
 import { IconsaxAnimatedIcon } from './iconsax-animated-icon';
-import { useMerchantOverviewData } from './use-merchant-overview-data';
+import { useAdminOverviewData } from './use-admin-overview-data';
 import {
   anomalyKeyLabel,
   formatCurrency,
@@ -64,13 +64,13 @@ export function OverviewPanel({
   request,
   storeSettings,
 }: {
-  session: MerchantSession;
-  request: MerchantRequester;
+  session: AdminSession;
+  request: AdminRequester;
   storeSettings?: StoreSettings | null;
 }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  const { data, loading: loadingState, errors } = useMerchantOverviewData(request);
+  const { data, loading: loadingState, errors } = useAdminOverviewData(request);
   const {
     overview,
     fulfillmentSla,
@@ -246,7 +246,7 @@ export function OverviewPanel({
                 <Chip
                   size="small"
                   variant="outlined"
-                  label={session.user.role === 'owner' ? 'المالك' : 'عضو فريق'}
+                  label={session.user.role === 'owner' ? 'المدير الرئيسي' : 'عضو فريق'}
                   sx={{ fontWeight: 900 }}
                 />
               </Stack>
@@ -710,7 +710,7 @@ export function OverviewPanel({
                   ) : (
                     <Stack spacing={1}>
                       <SoftRow
-                        label="إجمالي المتغيرات"
+                        label="إجمالي خيارات المنتج"
                         value={formatNumber(inventoryHealth?.kpis.totalVariants ?? 0)}
                       />
                       <SoftRow
@@ -1015,6 +1015,7 @@ export function OverviewPanel({
                             size="small"
                             color={getQualityTone(dataQuality?.status)}
                             label={`${dataQuality?.score ?? 0}/100`}
+                            sx={dataQuality?.status ? undefined : { bgcolor: 'success.dark' }}
                           />
                         }
                       />
@@ -1140,7 +1141,7 @@ export function OverviewPanel({
                 >
                   {[
                     'اضبط بيانات المتجر التشغيلية والعملات وساعات العمل.',
-                    'أضف تصنيفات المنتجات لتنظيم متجرك.',
+                    'أضف أقسام المنتجات لتنظيم متجر نجوم تليكوم.',
                     'أضف منتجاتك الأولى وحدد أسعارها ومخزونها.',
                     'تأكد من ضبط طرق الشحن والدفع.',
                     'راجع المخزون وحدود التنبيه بصورة دورية.',

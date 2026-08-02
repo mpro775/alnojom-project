@@ -2,7 +2,7 @@ export const SUPPORT_TICKET_SCOPES = ['b2b', 'b2c'] as const;
 export type SupportTicketScope = (typeof SUPPORT_TICKET_SCOPES)[number];
 
 export const SUPPORT_TICKET_SOURCES = [
-  'merchant_portal',
+  'admin_portal',
   'customer_portal',
   'system',
 ] as const;

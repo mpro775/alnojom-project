@@ -6,7 +6,7 @@ PROJECT_ROOT="$(cd "$BACKUP_SCRIPT_DIR/../.." && pwd)"
 BACKUP_DIR="${BACKUP_DIR:-$PROJECT_ROOT/backups}"
 RETENTION_DAYS="${RETENTION_DAYS:-30}"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_NAME="ecommerce_core_store_$TIMESTAMP"
+BACKUP_NAME="alnjoom_telecom_store_$TIMESTAMP"
 
 mkdir -p "$BACKUP_DIR"
 
@@ -21,9 +21,9 @@ error() {
 backup_database() {
     log "Starting database backup..."
     
-    local db_container="${DB_CONTAINER:-ecommerce_core-postgres}"
-    local db_user="${POSTGRES_USER:-ecommerce_core}"
-    local db_name="${POSTGRES_DB:-ecommerce_core_store}"
+    local db_container="${DB_CONTAINER:-alnjoom-telecom-postgres}"
+    local db_user="${POSTGRES_USER:-alnjoom}"
+    local db_name="${POSTGRES_DB:-alnjoom_telecom_store}"
     local db_password="${POSTGRES_PASSWORD:-}"
     
     local backup_file="$BACKUP_DIR/${BACKUP_NAME}_database.sql"
@@ -48,7 +48,7 @@ backup_database() {
 backup_redis() {
     log "Starting Redis backup..."
     
-    local redis_container="${REDIS_CONTAINER:-ecommerce_core-redis}"
+    local redis_container="${REDIS_CONTAINER:-alnjoom-telecom-redis}"
     local backup_file="$BACKUP_DIR/${BACKUP_NAME}_redis.rdb"
     
     if docker ps --format '{{.Names}}' | grep -q "^${redis_container}$"; then
@@ -68,7 +68,7 @@ backup_redis() {
 backup_storage() {
     log "Starting storage backup..."
     
-    local minio_container="${MINIO_CONTAINER:-ecommerce_core-minio}"
+    local minio_container="${MINIO_CONTAINER:-alnjoom-telecom-minio}"
     local backup_file="$BACKUP_DIR/${BACKUP_NAME}_storage.tar.gz"
     
     if docker ps --format '{{.Names}}' | grep -q "^${minio_container}$"; then
@@ -88,9 +88,9 @@ backup_storage() {
 apply_retention() {
     log "Applying retention policy ($RETENTION_DAYS days)..."
     
-    find "$BACKUP_DIR" -name "ecommerce_core_store_*" -type f -mtime +$RETENTION_DAYS -delete
+    find "$BACKUP_DIR" -name "alnjoom_telecom_store_*" -type f -mtime +$RETENTION_DAYS -delete
     
-    local file_count=$(find "$BACKUP_DIR" -name "ecommerce_core_store_*" -type f | wc -l)
+    local file_count=$(find "$BACKUP_DIR" -name "alnjoom_telecom_store_*" -type f | wc -l)
     log "Retention applied. $file_count backup files remaining."
 }
 
@@ -142,7 +142,7 @@ main() {
     local backup_files=()
     
     log "=========================================="
-    log "Ecommerce Core Store Backup Started"
+    log "Alnjoom Telecom Store Backup Started"
     log "Timestamp: $TIMESTAMP"
     log "=========================================="
     
@@ -175,7 +175,7 @@ main() {
     fi
     
     log "=========================================="
-    log "Ecommerce Core Store Backup Completed (exit: $exit_code)"
+    log "Alnjoom Telecom Store Backup Completed (exit: $exit_code)"
     log "=========================================="
     
     exit $exit_code

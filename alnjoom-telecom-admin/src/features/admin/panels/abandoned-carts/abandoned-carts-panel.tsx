@@ -14,12 +14,12 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import type { MerchantRequester } from '../../merchant-dashboard.types';
+import type { AdminRequester } from '../../admin-dashboard.types';
 import type { ManagedAbandonedCartListResponse, ManagedAbandonedCartStatus } from '../../types';
 import { AppPage, DataTableWrapper, FilterBar, PageHeader, StatCard } from '../../components/ui';
 
 interface AbandonedCartsPanelProps {
-  request: MerchantRequester;
+  request: AdminRequester;
 }
 
 const STATUS_OPTIONS: Array<{ value: ManagedAbandonedCartStatus | 'all'; label: string }> = [

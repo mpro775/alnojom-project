@@ -1,8 +1,8 @@
 import { PromotionsPanel } from '../promotions';
-import type { MerchantRequester } from '../../merchant-dashboard.types';
+import type { AdminRequester } from '../../admin-dashboard.types';
 
 interface CouponsPanelProps {
-  request: MerchantRequester;
+  request: AdminRequester;
 }
 
 export function CouponsPanel({ request }: CouponsPanelProps) {

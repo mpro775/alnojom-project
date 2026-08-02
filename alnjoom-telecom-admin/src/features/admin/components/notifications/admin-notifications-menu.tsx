@@ -9,28 +9,28 @@ import {
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
-import type { MerchantRequester } from '../../merchant-dashboard.types';
+import type { AdminRequester } from '../../admin-dashboard.types';
 import type {
   NotificationInboxItem,
   NotificationsInboxResponse,
 } from '../../types';
 import { ADMIN_TOKENS } from '../../../../theme/tokens';
 
-interface MerchantNotificationsMenuProps {
+interface AdminNotificationsMenuProps {
   anchorEl: HTMLElement | null;
   onClose: () => void;
   onViewAll: () => void;
-  request: MerchantRequester;
+  request: AdminRequester;
   realtimeVersion: number;
 }
 
-export function MerchantNotificationsMenu({
+export function AdminNotificationsMenu({
   anchorEl,
   onClose,
   onViewAll,
   request,
   realtimeVersion,
-}: MerchantNotificationsMenuProps) {
+}: AdminNotificationsMenuProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const radius = ADMIN_TOKENS.radius;

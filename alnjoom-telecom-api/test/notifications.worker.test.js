@@ -36,7 +36,7 @@ describe('notifications.worker helpers', () => {
     assert.equal(channel.publishCalls.length, 1);
     const publishCall = channel.publishCalls[0];
     assert.equal(publishCall.exchange, '');
-    assert.equal(publishCall.routingKey, 'notifications.order-status.retry');
+    assert.equal(publishCall.routingKey, 'alnjoom-telecom.notifications.retry.status');
     assert.equal(publishCall.options.expiration, '15000');
     assert.equal(publishCall.options.headers['x-retry-count'], 2);
     assert.equal(publishCall.options.headers['x-original-routing-key'], 'order.status.changed');
@@ -51,7 +51,7 @@ describe('notifications.worker helpers', () => {
     assert.equal(channel.publishCalls.length, 1);
     const publishCall = channel.publishCalls[0];
     assert.equal(publishCall.exchange, '');
-    assert.equal(publishCall.routingKey, 'notifications.inventory.retry');
+    assert.equal(publishCall.routingKey, 'alnjoom-telecom.notifications.retry.inventory');
     assert.equal(publishCall.options.expiration, '12000');
     assert.equal(publishCall.options.headers['x-retry-count'], 1);
     assert.equal(publishCall.options.headers['x-original-routing-key'], 'inventory.low_stock');
@@ -78,22 +78,22 @@ describe('notifications.worker helpers', () => {
     );
 
     assert.equal(channel.publishCalls.length, 2);
-    assert.equal(channel.publishCalls[0].routingKey, 'notifications.generic.retry');
+    assert.equal(channel.publishCalls[0].routingKey, 'alnjoom-telecom.notifications.retry.generic');
     assert.equal(
       channel.publishCalls[0].options.headers['x-original-routing-key'],
       'payment.receipt_uploaded',
     );
-    assert.equal(channel.publishCalls[1].routingKey, 'notifications.generic.retry');
+    assert.equal(channel.publishCalls[1].routingKey, 'alnjoom-telecom.notifications.retry.generic');
     assert.equal(
       channel.publishCalls[1].options.headers['x-original-routing-key'],
       'cart.high_value_detected',
     );
   });
 
-  it('binds notification worker to merchant event families', async () => {
+  it('binds notification worker to admin event families', async () => {
     const channel = createChannel();
 
-    await setupTopology(channel, 'commerce.events', defaultQueues());
+    await setupTopology(channel, 'alnjoom-telecom.events', defaultQueues());
 
     assert.deepEqual(channel.bindCalls.map((call) => call.pattern).sort(), [
       'analytics.*',
@@ -177,7 +177,7 @@ describe('notifications.worker helpers', () => {
     assert.equal(channel.ackCalls, 1);
     assert.equal(channel.publishCalls.length, 1);
     const retryCall = channel.publishCalls[0];
-    assert.equal(retryCall.routingKey, 'notifications.order-created.retry');
+    assert.equal(retryCall.routingKey, 'alnjoom-telecom.notifications.retry.created');
     assert.equal(retryCall.options.headers['x-retry-count'], 1);
     assert.equal(retryCall.options.headers['x-original-routing-key'], 'order.created');
     assert.equal(retryCall.options.expiration, '10000');
@@ -213,7 +213,7 @@ describe('notifications.worker helpers', () => {
     assert.equal(channel.ackCalls, 1);
     assert.equal(channel.publishCalls.length, 1);
     const dlqCall = channel.publishCalls[0];
-    assert.equal(dlqCall.routingKey, 'notifications.order-events.dlq');
+    assert.equal(dlqCall.routingKey, 'alnjoom-telecom.notifications.dlq');
     assert.equal(dlqCall.options.headers['x-retry-count'], 3);
     assert.equal(dlqCall.options.headers['x-original-routing-key'], 'order.created');
     assert.equal(dlqCall.options.headers['x-failed-reason'], 'processing failed');
@@ -253,7 +253,7 @@ describe('notifications.worker helpers', () => {
     assert.equal(notificationsService.failures.length, 1);
     assert.equal(notificationsService.failures[0].payload.raw, '{bad-json');
     assert.equal(channel.publishCalls.length, 1);
-    assert.equal(channel.publishCalls[0].routingKey, 'notifications.order-events.dlq');
+    assert.equal(channel.publishCalls[0].routingKey, 'alnjoom-telecom.notifications.dlq');
   });
 
   it('resolves queue names from config defaults and overrides', () => {
@@ -268,22 +268,22 @@ describe('notifications.worker helpers', () => {
 
     const queues = resolveQueueNames(config);
     assert.equal(queues.mainQueue, 'main.override');
-    assert.equal(queues.dlqQueue, 'notifications.order-events.dlq');
-    assert.equal(queues.retryCreatedQueue, 'notifications.order-created.retry');
-    assert.equal(queues.retryStatusQueue, 'notifications.order-status.retry');
-    assert.equal(queues.retryInventoryQueue, 'notifications.inventory.retry');
-    assert.equal(queues.retryGenericQueue, 'notifications.generic.retry');
+    assert.equal(queues.dlqQueue, 'alnjoom-telecom.notifications.dlq');
+    assert.equal(queues.retryCreatedQueue, 'alnjoom-telecom.notifications.retry.created');
+    assert.equal(queues.retryStatusQueue, 'alnjoom-telecom.notifications.retry.status');
+    assert.equal(queues.retryInventoryQueue, 'alnjoom-telecom.notifications.retry.inventory');
+    assert.equal(queues.retryGenericQueue, 'alnjoom-telecom.notifications.retry.generic');
   });
 });
 
 function defaultQueues() {
   return {
-    mainQueue: 'notifications.order-events',
-    dlqQueue: 'notifications.order-events.dlq',
-    retryCreatedQueue: 'notifications.order-created.retry',
-    retryStatusQueue: 'notifications.order-status.retry',
-    retryInventoryQueue: 'notifications.inventory.retry',
-    retryGenericQueue: 'notifications.generic.retry',
+    mainQueue: 'alnjoom-telecom.notifications',
+    dlqQueue: 'alnjoom-telecom.notifications.dlq',
+    retryCreatedQueue: 'alnjoom-telecom.notifications.retry.created',
+    retryStatusQueue: 'alnjoom-telecom.notifications.retry.status',
+    retryInventoryQueue: 'alnjoom-telecom.notifications.retry.inventory',
+    retryGenericQueue: 'alnjoom-telecom.notifications.retry.generic',
   };
 }
 

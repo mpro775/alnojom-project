@@ -7,6 +7,7 @@ import type {
   GaugeOptions,
   MetricsCollector,
 } from './metrics.types';
+import { LEGACY_INFO_METRIC_NAME } from '../compatibility/legacy-branding-runtime';
 
 interface MetricValue {
   value: number;
@@ -38,7 +39,7 @@ export class MetricsService implements MetricsCollector, OnModuleInit {
   private defaultLabels: MetricLabels;
 
   constructor(private readonly configService: ConfigService) {
-    this.prefix = configService.get<string>('METRICS_PREFIX', 'ecommerce_core_');
+    this.prefix = configService.get<string>('METRICS_PREFIX', 'alnjoom_');
     this.defaultLabels = {
       app: 'api',
       env: configService.get<string>('NODE_ENV', 'development'),
@@ -286,9 +287,15 @@ export class MetricsService implements MetricsCollector, OnModuleInit {
 
   async getMetrics(): Promise<string> {
     const lines: string[] = [];
-    lines.push('# HELP ecommerce_core_info Application info');
-    lines.push('# TYPE ecommerce_core_info gauge');
-    lines.push(`ecommerce_core_info{version="1.0.0"} 1`);
+    const infoMetricName = `${this.prefix}info`;
+    lines.push(`# HELP ${infoMetricName} Application info`);
+    lines.push(`# TYPE ${infoMetricName} gauge`);
+    lines.push(`${infoMetricName}{version="1.0.0"} 1`);
+    if (infoMetricName !== LEGACY_INFO_METRIC_NAME) {
+      lines.push(`# HELP ${LEGACY_INFO_METRIC_NAME} Deprecated application info compatibility metric`);
+      lines.push(`# TYPE ${LEGACY_INFO_METRIC_NAME} gauge`);
+      lines.push(`${LEGACY_INFO_METRIC_NAME}{version="1.0.0"} 1`);
+    }
     lines.push('');
 
     for (const [, metric] of this.metrics) {

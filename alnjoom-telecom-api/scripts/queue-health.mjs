@@ -8,9 +8,9 @@ const managementUrl = process.env.RABBITMQ_MANAGEMENT_URL ?? '';
 const managementUser = process.env.RABBITMQ_MANAGEMENT_USER ?? 'guest';
 const managementPassword = process.env.RABBITMQ_MANAGEMENT_PASSWORD ?? 'guest';
 
-const notificationMainQueue = process.env.NOTIFICATIONS_MAIN_QUEUE ?? 'notifications.order-events';
+const notificationMainQueue = process.env.NOTIFICATIONS_MAIN_QUEUE ?? 'alnjoom-telecom.notifications';
 const notificationDlqQueue =
-  process.env.NOTIFICATIONS_DLQ_QUEUE ?? 'notifications.order-events.dlq';
+  process.env.NOTIFICATIONS_DLQ_QUEUE ?? 'alnjoom-telecom.notifications.dlq';
 
 const mainQueueMaxMessages = Number(process.env.NOTIFICATIONS_MAIN_QUEUE_MAX_MESSAGES ?? 200);
 const dlqQueueMaxMessages = Number(process.env.NOTIFICATIONS_DLQ_QUEUE_MAX_MESSAGES ?? 0);

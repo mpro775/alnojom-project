@@ -73,7 +73,7 @@ export function GeneratedVariantsEditor({
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }}>
         <TextField
           size="small"
-          placeholder="بحث في المتغيرات..."
+          placeholder="بحث في خيارات المنتج..."
           value={searchQuery}
           onChange={(e) => {
             setSearchQuery(e.target.value);
@@ -82,7 +82,7 @@ export function GeneratedVariantsEditor({
           sx={{ minWidth: 240 }}
         />
         <Typography variant="body2" color="text.secondary">
-          {filteredDrafts.length} متغير
+          {filteredDrafts.length} خيار منتج
           {selectedIds.length > 0 ? ` · ${selectedIds.length} محدد` : ''}
         </Typography>
       </Stack>
@@ -107,7 +107,7 @@ export function GeneratedVariantsEditor({
                   onChange={toggleSelectAll}
                 />
               </TableCell>
-              <TableCell>المتغير</TableCell>
+              <TableCell>خيار المنتج</TableCell>
               <TableCell>SKU</TableCell>
               <TableCell>الباركود</TableCell>
               <TableCell>السعر</TableCell>
@@ -187,7 +187,7 @@ export function GeneratedVariantsEditor({
                 <TableCell align="left">
                   <Stack direction="row" spacing={0.5}>
                     <Button size="small" onClick={() => onOpenWarehouseDrawer(draft.id)}>
-                      المستودعات
+                      المخازن
                     </Button>
                     <Button size="small" color="error" onClick={() => onRemoveDraft(draft.id)}>
                       حذف
@@ -218,7 +218,7 @@ export function GeneratedVariantsEditor({
         <>
           <Divider />
           <Typography variant="caption" color="text.secondary">
-            {selectedIds.length} متغير محدد — استخدم الإجراءات الجماعية أعلاه للتطبيق على المحدد فقط.
+            {selectedIds.length} خيار منتج محدد — استخدم الإجراءات الجماعية أعلاه للتطبيق على المحدد فقط.
           </Typography>
         </>
       ) : null}

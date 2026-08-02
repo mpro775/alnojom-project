@@ -1,8 +1,8 @@
 import type { ReactElement } from 'react';
-import type { MerchantRequestOptions } from './api-client';
-import type { MerchantSession, StoreSettings } from './types';
+import type { AdminRequestOptions } from './api-client';
+import type { AdminSession, StoreSettings } from './types';
 
-export type MerchantTabKey =
+export type AdminTabKey =
   | 'overview'
   | 'analyticsGeneral'
   | 'analyticsLive'
@@ -40,24 +40,24 @@ export type MerchantTabKey =
   | 'staff'
   | 'webhooks';
 
-export type MerchantRequester = <T>(
+export type AdminRequester = <T>(
   path: string,
   init?: RequestInit,
-  options?: MerchantRequestOptions,
+  options?: AdminRequestOptions,
 ) => Promise<T | null>;
 
-export interface MerchantPanelProps {
-  session: MerchantSession;
-  request: MerchantRequester;
+export interface AdminPanelProps {
+  session: AdminSession;
+  request: AdminRequester;
   storeSettings?: StoreSettings | null;
   onStoreSettingsUpdated?: (settings: StoreSettings) => void;
   notificationRealtimeVersion?: number;
-  onNavigate?: (tab: MerchantTabKey) => void;
+  onNavigate?: (tab: AdminTabKey) => void;
 }
 
-export interface MerchantNavItem {
-  key: MerchantTabKey | string;
+export interface AdminNavItem {
+  key: AdminTabKey | string;
   label: string;
   icon?: ReactElement;
-  children?: { key: MerchantTabKey; label: string; icon?: ReactElement }[];
+  children?: { key: AdminTabKey; label: string; icon?: ReactElement }[];
 }

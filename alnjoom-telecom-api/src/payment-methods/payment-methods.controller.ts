@@ -34,17 +34,17 @@ import {
 } from './dto/store-payment-method.dto';
 import { PaymentMethodsService } from './payment-methods.service';
 
-@ApiTags('merchant-payment-methods')
+@ApiTags('admin-payment-methods')
 @ApiBearerAuth()
-@Controller('merchant/payment-methods')
+@Controller('admin/payment-methods')
 @UseGuards(AccessTokenGuard, TenantGuard, PermissionsGuard)
-export class MerchantPaymentMethodsController {
+export class AdminPaymentMethodsController {
   constructor(private readonly service: PaymentMethodsService) {}
 
   @Get('available')
   @RequirePermissions(PERMISSIONS.paymentsRead)
   async available() {
-    return this.service.listAvailableForMerchant();
+    return this.service.listAvailableForAdmin();
   }
 
   @Get()

@@ -154,16 +154,16 @@ export class ShippingController {
   }
 }
 
-@ApiTags('fulfillment')
+@ApiTags('admin-fulfillment')
 @ApiBearerAuth()
-@Controller('merchant/fulfillment')
+@Controller('admin/fulfillment')
 @UseGuards(AccessTokenGuard, TenantGuard, PermissionsGuard)
-export class MerchantFulfillmentController {
+export class AdminFulfillmentController {
   constructor(private readonly shippingService: ShippingService) {}
 
   @Get()
   @RequirePermissions(PERMISSIONS.storeRead)
-  @ApiOkResponse({ description: 'Get merchant fulfillment settings and readiness' })
+  @ApiOkResponse({ description: 'Get admin fulfillment settings and readiness' })
   async getSettings(@CurrentUser() currentUser: AuthUser): Promise<FulfillmentSettingsResponse> {
     return this.shippingService.getFulfillmentSettings(currentUser);
   }

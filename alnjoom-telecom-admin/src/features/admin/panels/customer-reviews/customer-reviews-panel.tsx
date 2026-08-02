@@ -14,7 +14,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import type { MerchantRequester } from '../../merchant-dashboard.types';
+import type { AdminRequester } from '../../admin-dashboard.types';
 import type {
   ManagedReviewsListResponse,
   ModerationStatus,
@@ -22,7 +22,7 @@ import type {
 import { AppPage, DataTableWrapper, FilterBar, PageHeader } from '../../components/ui';
 
 interface CustomerReviewsPanelProps {
-  request: MerchantRequester;
+  request: AdminRequester;
 }
 
 type ReviewStatusFilter = ModerationStatus | 'ALL';

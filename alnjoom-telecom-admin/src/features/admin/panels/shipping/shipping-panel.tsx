@@ -23,7 +23,7 @@ import {
   Typography,
 } from '@mui/material';
 
-import type { MerchantRequester } from '../../merchant-dashboard.types';
+import type { AdminRequester } from '../../admin-dashboard.types';
 import type {
   ShippingMethod,
   ShippingMethodRange,
@@ -35,7 +35,7 @@ import { FloatingActionButton } from '../../components/ui';
 import { clearFieldErrors, isApiError, mapFieldErrors } from '../../../../lib/api-error';
 
 interface ShippingPanelProps {
-  request: MerchantRequester;
+  request: AdminRequester;
 }
 
 const methodTypes: Array<{ value: ShippingMethodType; label: string }> = [

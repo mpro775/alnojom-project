@@ -1,8 +1,8 @@
 {
-    "name": "general-ecommerce-admin",
+    "name": "alnjoom-telecom-admin",
     "version": "0.1.0",
     "private": true,
-    "description": "General Ecommerce Admin Dashboard",
+    "description": "Alnjoom Telecom Store Admin Dashboard",
     "type": "module",
     "scripts": {
         "dev": "vite",
@@ -15,11 +15,12 @@
         "a11y:test": "playwright test tests/a11y",
         "test:e2e": "playwright test",
         "a11y:ci": "npm run check:mojibake && npm run typecheck && npm run lint && npm run a11y:test && npm run build",
-        "test": "node --test",
+        "test": "tsx --test \"test/**/*.test.js\" \"test/**/*.test.ts\"",
         "format": "prettier --check .",
         "format:write": "prettier --write .",
         "guard:legacy-platform": "node scripts/guard-no-legacy-platform.mjs",
-        "guard:legacy-theme-templates": "node scripts/guard-no-legacy-theme-templates.mjs"
+        "guard:legacy-theme-templates": "node scripts/guard-no-legacy-theme-templates.mjs",
+        "guard:alnjoom-branding": "node scripts/guard-alnjoom-branding.mjs"
     },
     "dependencies": {
         "@emotion/cache": "^11.14.0",
@@ -57,6 +58,7 @@
         "globals": "^17.5.0",
         "openapi-typescript": "^7.9.1",
         "prettier": "^3.5.0",
+        "tsx": "^4.19.2",
         "typescript": "^5.7.3",
         "typescript-eslint": "^8.59.0",
         "vite": "^6.1.0"

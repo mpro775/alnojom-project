@@ -40,14 +40,14 @@ export class CustomersManagementController {
 
   @Get()
   @RequirePermissions(PERMISSIONS.customersRead)
-  @ApiOkResponse({ description: 'List customers for merchant dashboard' })
+  @ApiOkResponse({ description: 'List customers for the admin dashboard' })
   async list(@CurrentUser() currentUser: AuthUser, @Query() query: ListManagedCustomersQueryDto) {
     return this.customersService.listManagedCustomers(currentUser, query);
   }
 
   @Post()
   @RequirePermissions(PERMISSIONS.customersWrite)
-  @ApiOkResponse({ description: 'Create customer manually from merchant dashboard' })
+  @ApiOkResponse({ description: 'Create customer manually from the admin dashboard' })
   async create(
     @CurrentUser() currentUser: AuthUser,
     @Body() body: CreateManagedCustomerDto,
@@ -62,7 +62,7 @@ export class CustomersManagementController {
 
   @Get('abandoned-carts')
   @RequirePermissions(PERMISSIONS.customersRead)
-  @ApiOkResponse({ description: 'List abandoned carts for merchant dashboard' })
+  @ApiOkResponse({ description: 'List abandoned carts for the admin dashboard' })
   async listAbandonedCarts(
     @CurrentUser() currentUser: AuthUser,
     @Query() query: ListManagedAbandonedCartsQueryDto,

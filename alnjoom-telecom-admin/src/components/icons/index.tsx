@@ -97,7 +97,7 @@ import { forwardRef } from 'react';
 type MuiIconColor = NonNullable<SvgIconProps['color']>;
 const IconBox = Box as any;
 
-export type EcommerceCoreIconProps = Omit<SvgIconProps, 'children' | 'component' | 'viewBox'> & {
+export type AlnjoomIconProps = Omit<SvgIconProps, 'children' | 'component' | 'viewBox'> & {
   absoluteStrokeWidth?: boolean;
   strokeWidth?: number;
 };
@@ -149,7 +149,7 @@ function composeIconSx(
   ] as SxProps<Theme>;
 }
 
-function getIconSize(fontSize: EcommerceCoreIconProps['fontSize']) {
+function getIconSize(fontSize: AlnjoomIconProps['fontSize']) {
   if (!fontSize) {
     return 22;
   }
@@ -157,7 +157,7 @@ function getIconSize(fontSize: EcommerceCoreIconProps['fontSize']) {
   return ICON_SIZE_BY_FONT_SIZE[String(fontSize)] ?? fontSize ?? 22;
 }
 
-function getIconColor(color: EcommerceCoreIconProps['color'], htmlColor: string | undefined) {
+function getIconColor(color: AlnjoomIconProps['color'], htmlColor: string | undefined) {
   if (htmlColor) {
     return htmlColor;
   }
@@ -170,7 +170,7 @@ function getIconColor(color: EcommerceCoreIconProps['color'], htmlColor: string 
 }
 
 export function createTablerMuiIcon(Icon: TablerIcon, displayName: string) {
-  const WrappedIcon = forwardRef<SVGSVGElement, EcommerceCoreIconProps>(function EcommerceCoreTablerIcon(
+  const WrappedIcon = forwardRef<SVGSVGElement, AlnjoomIconProps>(function AlnjoomTablerIcon(
     {
       absoluteStrokeWidth: _absoluteStrokeWidth,
       classes: _classes,

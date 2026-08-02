@@ -2,10 +2,10 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { IsBoolean, IsIn, IsInt, IsISO8601, IsOptional, IsString, Max, Min } from 'class-validator';
 import {
-  MERCHANT_NOTIFICATION_CATEGORIES,
-  MERCHANT_NOTIFICATION_SEVERITIES,
-  type MerchantNotificationCategory,
-  type MerchantNotificationSeverity,
+  ADMIN_NOTIFICATION_CATEGORIES,
+  ADMIN_NOTIFICATION_SEVERITIES,
+  type AdminNotificationCategory,
+  type AdminNotificationSeverity,
 } from '../notification-events.registry';
 
 export class ListNotificationsQueryDto {
@@ -24,15 +24,15 @@ export class ListNotificationsQueryDto {
   @IsString()
   type?: string;
 
-  @ApiPropertyOptional({ enum: MERCHANT_NOTIFICATION_CATEGORIES })
+  @ApiPropertyOptional({ enum: ADMIN_NOTIFICATION_CATEGORIES })
   @IsOptional()
-  @IsIn(MERCHANT_NOTIFICATION_CATEGORIES)
-  category?: MerchantNotificationCategory;
+  @IsIn(ADMIN_NOTIFICATION_CATEGORIES)
+  category?: AdminNotificationCategory;
 
-  @ApiPropertyOptional({ enum: MERCHANT_NOTIFICATION_SEVERITIES })
+  @ApiPropertyOptional({ enum: ADMIN_NOTIFICATION_SEVERITIES })
   @IsOptional()
-  @IsIn(MERCHANT_NOTIFICATION_SEVERITIES)
-  severity?: MerchantNotificationSeverity;
+  @IsIn(ADMIN_NOTIFICATION_SEVERITIES)
+  severity?: AdminNotificationSeverity;
 
   @ApiPropertyOptional()
   @IsOptional()

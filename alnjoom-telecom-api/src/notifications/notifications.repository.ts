@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { DatabaseService } from '../database/database.service';
 import type {
-  MerchantNotificationCategory,
-  MerchantNotificationSeverity,
+  AdminNotificationCategory,
+  AdminNotificationSeverity,
 } from './notification-events.registry';
 
 export type NotificationRecipientType = 'store' | 'store_user' | 'customer';
@@ -17,8 +17,8 @@ export interface NotificationInboxRecord {
   recipient_customer_id: string | null;
   recipient_label: string | null;
   type: string;
-  category: MerchantNotificationCategory | null;
-  severity: MerchantNotificationSeverity;
+  category: AdminNotificationCategory | null;
+  severity: AdminNotificationSeverity;
   source: string;
   dedupe_key: string | null;
   expires_at: Date | null;
@@ -96,8 +96,8 @@ export class NotificationsRepository {
     recipientCustomerId: string | null;
     recipientLabel?: string | null;
     type: string;
-    category?: MerchantNotificationCategory | null;
-    severity?: MerchantNotificationSeverity;
+    category?: AdminNotificationCategory | null;
+    severity?: AdminNotificationSeverity;
     source?: string | null;
     dedupeKey?: string | null;
     expiresAt?: Date | string | null;
@@ -179,8 +179,8 @@ export class NotificationsRepository {
     storeUserId: string;
     unreadOnly: boolean;
     type?: string;
-    category?: MerchantNotificationCategory;
-    severity?: MerchantNotificationSeverity;
+    category?: AdminNotificationCategory;
+    severity?: AdminNotificationSeverity;
     dateFrom?: Date;
     dateTo?: Date;
     page: number;

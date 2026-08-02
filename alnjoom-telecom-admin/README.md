@@ -1,6 +1,6 @@
-# General Ecommerce Admin Dashboard
+# Alnjoom Telecom Store Admin Dashboard
 
-Admin dashboard for General Ecommerce.
+Operator dashboard for Alnjoom Telecom Store (`/admin`).
 
 ## Tech Stack
 
@@ -40,7 +40,7 @@ VITE_SF_ROLLOUT_STAGE=beta
 
 ## Features
 
-### Merchant Dashboard
+### Alnjoom Telecom Admin
 - Product & catalog management
 - Order management
 - Customer management
@@ -49,8 +49,5 @@ VITE_SF_ROLLOUT_STAGE=beta
 - Analytics & reporting
 - Store settings & onboarding
 
-### Platform Console
-- Multi-tenant store management
-- Platform-level analytics
-- Subscription & billing
-- Support tickets
+Legacy pre-Admin deep links are temporarily redirected during the documented
+compatibility window. New links must use `/admin`.

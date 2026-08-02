@@ -1,25 +1,25 @@
 import { useCallback, useEffect, useState } from 'react';
-import { isMerchantTabKey } from '../constants/merchant-navigation';
-import type { MerchantTabKey } from '../merchant-dashboard.types';
+import { isAdminTabKey } from '../constants/admin-navigation';
+import type { AdminTabKey } from '../admin-dashboard.types';
 
-interface SetMerchantTabOptions {
+interface SetAdminTabOptions {
   replace?: boolean;
 }
 
-type SetMerchantTab = (nextTab: MerchantTabKey, options?: SetMerchantTabOptions) => void;
+type SetAdminTab = (nextTab: AdminTabKey, options?: SetAdminTabOptions) => void;
 
 const TAB_QUERY_PARAM = 'tab';
 
-function readTabFromLocation(defaultTab: MerchantTabKey): MerchantTabKey {
+function readTabFromLocation(defaultTab: AdminTabKey): AdminTabKey {
   const params = new URLSearchParams(window.location.search);
   const tab = params.get(TAB_QUERY_PARAM);
-  if (!tab || !isMerchantTabKey(tab)) {
+  if (!tab || !isAdminTabKey(tab)) {
     return defaultTab;
   }
   return tab;
 }
 
-function writeTabToLocation(tab: MerchantTabKey, replace = false): void {
+function writeTabToLocation(tab: AdminTabKey, replace = false): void {
   const url = new URL(window.location.href);
   url.searchParams.set(TAB_QUERY_PARAM, tab);
   const nextUrl = `${url.pathname}${url.search}${url.hash}`;
@@ -30,8 +30,8 @@ function writeTabToLocation(tab: MerchantTabKey, replace = false): void {
   window.history.pushState({}, '', nextUrl);
 }
 
-export function useMerchantTabState(defaultTab: MerchantTabKey): [MerchantTabKey, SetMerchantTab] {
-  const [activeTab, setActiveTabState] = useState<MerchantTabKey>(() => readTabFromLocation(defaultTab));
+export function useAdminTabState(defaultTab: AdminTabKey): [AdminTabKey, SetAdminTab] {
+  const [activeTab, setActiveTabState] = useState<AdminTabKey>(() => readTabFromLocation(defaultTab));
 
   useEffect(() => {
     const currentTab = readTabFromLocation(defaultTab);
@@ -53,7 +53,7 @@ export function useMerchantTabState(defaultTab: MerchantTabKey): [MerchantTabKey
     };
   }, [defaultTab]);
 
-  const setActiveTab = useCallback<SetMerchantTab>((nextTab, options) => {
+  const setActiveTab = useCallback<SetAdminTab>((nextTab, options) => {
     setActiveTabState(nextTab);
     writeTabToLocation(nextTab, options?.replace ?? false);
   }, []);

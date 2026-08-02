@@ -1,10 +1,22 @@
-import type { MerchantSession } from './types';
-
-const SESSION_STORAGE_KEY = 'merchant.session.v1';
-const API_BASE_URL_KEY = 'merchant.apiBaseUrl.v1';
+import type { AdminSession } from './types';
+import {
+  ADMIN_STORAGE_KEYS,
+  LEGACY_ADMIN_STORAGE_KEYS,
+  migrateStorageValue,
+  parseLegacyAdminSession,
+} from '../../compatibility/legacy-admin-compat';
 
 function normalizeApiBaseUrl(value: string): string {
   return value.trim().replace(/\/+$/, '');
+}
+
+function parseSession(raw: string): AdminSession | null {
+  return parseLegacyAdminSession(raw) as AdminSession | null;
+}
+
+function parseApiBaseUrl(raw: string): string | null {
+  const normalized = normalizeApiBaseUrl(raw);
+  return normalized.length > 0 ? normalized : null;
 }
 
 function readEnvApiBaseUrl(): string {
@@ -16,33 +28,32 @@ function readEnvApiBaseUrl(): string {
   return normalizeApiBaseUrl(envValue);
 }
 
-export function readStoredSession(): MerchantSession | null {
+export function readStoredSession(): AdminSession | null {
   try {
-    const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
-    if (!raw) {
-      return null;
-    }
-
-    const parsed = JSON.parse(raw) as MerchantSession;
-    if (!parsed?.accessToken || !parsed?.refreshToken || !parsed?.user?.storeId) {
-      return null;
-    }
-
-    return parsed;
+    return migrateStorageValue({
+      storage: window.localStorage,
+      currentKey: ADMIN_STORAGE_KEYS.session,
+      legacyKey: LEGACY_ADMIN_STORAGE_KEYS.session,
+      parse: parseSession,
+    });
   } catch {
     return null;
   }
 }
 
-export function writeStoredSession(session: MerchantSession | null): void {
+export function writeStoredSession(session: AdminSession | null): void {
   try {
     if (!session) {
-      window.localStorage.removeItem(SESSION_STORAGE_KEY);
+      window.localStorage.removeItem(ADMIN_STORAGE_KEYS.session);
+      window.localStorage.removeItem(LEGACY_ADMIN_STORAGE_KEYS.session);
       return;
     }
 
-    window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
-    window.localStorage.setItem(API_BASE_URL_KEY, normalizeApiBaseUrl(session.apiBaseUrl));
+    window.localStorage.setItem(ADMIN_STORAGE_KEYS.session, JSON.stringify(session));
+    window.localStorage.setItem(
+      ADMIN_STORAGE_KEYS.apiBaseUrl,
+      normalizeApiBaseUrl(session.apiBaseUrl),
+    );
   } catch {
     return;
   }
@@ -55,8 +66,14 @@ export function readStoredApiBaseUrl(): string {
   }
 
   try {
-    const stored = window.localStorage.getItem(API_BASE_URL_KEY);
-    return stored && stored.length > 0 ? normalizeApiBaseUrl(stored) : 'http://localhost:3000';
+    return (
+      migrateStorageValue({
+        storage: window.localStorage,
+        currentKey: ADMIN_STORAGE_KEYS.apiBaseUrl,
+        legacyKey: LEGACY_ADMIN_STORAGE_KEYS.apiBaseUrl,
+        parse: parseApiBaseUrl,
+      }) ?? 'http://localhost:3000'
+    );
   } catch {
     return 'http://localhost:3000';
   }

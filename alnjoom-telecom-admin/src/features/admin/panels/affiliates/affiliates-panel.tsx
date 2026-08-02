@@ -18,7 +18,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import type { MerchantRequester } from '../../merchant-dashboard.types';
+import type { AdminRequester } from '../../admin-dashboard.types';
 import type {
   AffiliateCommissionsResponse,
   AffiliateLink,
@@ -28,7 +28,7 @@ import type {
 } from '../../types';
 
 interface AffiliatesPanelProps {
-  request: MerchantRequester;
+  request: AdminRequester;
 }
 
 export function AffiliatesPanel({ request }: AffiliatesPanelProps) {

@@ -1,5 +1,5 @@
 import { TableCell, TableRow, Typography } from '@mui/material';
-import { EcommerceCoreLoader } from './ecommerce_core-loader';
+import { AlnjoomLoader } from './alnjoom-loader';
 
 interface TableLoadingRowProps {
   colSpan: number;
@@ -14,7 +14,7 @@ export function TableLoadingRow({ colSpan }: TableLoadingRowProps) {
   return (
     <TableRow>
       <TableCell colSpan={colSpan} align="center" sx={{ py: 6 }}>
-        <EcommerceCoreLoader size="sm" label="جاري تحميل البيانات..." compact />
+        <AlnjoomLoader size="sm" label="جاري تحميل البيانات..." compact />
       </TableCell>
     </TableRow>
   );

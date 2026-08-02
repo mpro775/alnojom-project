@@ -108,12 +108,12 @@ export class NotificationsGateway implements OnGatewayConnection {
       throw new Error('Access token is required');
     }
 
-    const merchant = await this.tryVerifyMerchantToken(token);
-    if (merchant) {
+    const admin = await this.tryVerifyAdminToken(token);
+    if (admin) {
       return {
         recipientType: 'store_user',
-        storeId: merchant.storeId,
-        storeUserId: merchant.sub,
+        storeId: admin.storeId,
+        storeUserId: admin.sub,
       };
     }
 
@@ -143,7 +143,7 @@ export class NotificationsGateway implements OnGatewayConnection {
     return null;
   }
 
-  private async tryVerifyMerchantToken(token: string): Promise<AccessTokenPayload | null> {
+  private async tryVerifyAdminToken(token: string): Promise<AccessTokenPayload | null> {
     try {
       const secret = this.configService.getOrThrow<string>('JWT_ACCESS_SECRET');
       const payload = await this.jwtService.verifyAsync<AccessTokenPayload>(token, { secret });

@@ -1311,7 +1311,7 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "List customers for merchant dashboard"
+            "description": "List customers for the admin dashboard"
           }
         },
         "security": [
@@ -1338,7 +1338,7 @@
         },
         "responses": {
           "200": {
-            "description": "Create customer manually from merchant dashboard"
+            "description": "Create customer manually from the admin dashboard"
           }
         },
         "security": [
@@ -1357,7 +1357,7 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "List abandoned carts for merchant dashboard"
+            "description": "List abandoned carts for the admin dashboard"
           }
         },
         "security": [
@@ -4254,6 +4254,36 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4273,6 +4303,36 @@
         "responses": {
           "200": {
             "description": "Export filtered orders as Excel"
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4292,6 +4352,36 @@
         "responses": {
           "200": {
             "description": "Search products for manual order creation"
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4321,6 +4411,36 @@
         "responses": {
           "200": {
             "description": "Create manual order from admin panel"
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4359,6 +4479,36 @@
         "responses": {
           "200": {
             "description": "Update manual order before shipping"
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4391,6 +4541,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/OrderDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
                 }
               }
             }
@@ -4432,6 +4612,36 @@
         "responses": {
           "201": {
             "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4470,6 +4680,36 @@
         "responses": {
           "201": {
             "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4508,6 +4748,36 @@
         "responses": {
           "201": {
             "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4546,6 +4816,36 @@
         "responses": {
           "201": {
             "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4584,6 +4884,36 @@
         "responses": {
           "201": {
             "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4622,6 +4952,36 @@
         "responses": {
           "201": {
             "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4660,6 +5020,36 @@
         "responses": {
           "201": {
             "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4698,6 +5088,36 @@
         "responses": {
           "201": {
             "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4736,6 +5156,36 @@
         "responses": {
           "201": {
             "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4774,6 +5224,36 @@
         "responses": {
           "201": {
             "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4812,6 +5292,36 @@
         "responses": {
           "201": {
             "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -5520,13 +6030,13 @@
         ]
       }
     },
-    "/merchant/fulfillment": {
+    "/admin/fulfillment": {
       "get": {
-        "operationId": "MerchantFulfillmentController_getSettings",
+        "operationId": "AdminFulfillmentController_getSettings",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Get merchant fulfillment settings and readiness"
+            "description": "Get admin fulfillment settings and readiness"
           }
         },
         "security": [
@@ -5535,13 +6045,13 @@
           }
         ],
         "tags": [
-          "fulfillment"
+          "admin-fulfillment"
         ]
       }
     },
-    "/merchant/fulfillment/quick-setup": {
+    "/admin/fulfillment/quick-setup": {
       "post": {
-        "operationId": "MerchantFulfillmentController_quickSetup",
+        "operationId": "AdminFulfillmentController_quickSetup",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -5564,13 +6074,13 @@
           }
         ],
         "tags": [
-          "fulfillment"
+          "admin-fulfillment"
         ]
       }
     },
-    "/merchant/fulfillment/zones": {
+    "/admin/fulfillment/zones": {
       "post": {
-        "operationId": "MerchantFulfillmentController_createZone",
+        "operationId": "AdminFulfillmentController_createZone",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -5593,13 +6103,13 @@
           }
         ],
         "tags": [
-          "fulfillment"
+          "admin-fulfillment"
         ]
       }
     },
-    "/merchant/fulfillment/zones/{zoneId}": {
+    "/admin/fulfillment/zones/{zoneId}": {
       "put": {
-        "operationId": "MerchantFulfillmentController_updateZone",
+        "operationId": "AdminFulfillmentController_updateZone",
         "parameters": [
           {
             "name": "zoneId",
@@ -5631,11 +6141,11 @@
           }
         ],
         "tags": [
-          "fulfillment"
+          "admin-fulfillment"
         ]
       },
       "delete": {
-        "operationId": "MerchantFulfillmentController_removeZone",
+        "operationId": "AdminFulfillmentController_removeZone",
         "parameters": [
           {
             "name": "zoneId",
@@ -5657,13 +6167,13 @@
           }
         ],
         "tags": [
-          "fulfillment"
+          "admin-fulfillment"
         ]
       }
     },
-    "/merchant/fulfillment/zones/{zoneId}/methods": {
+    "/admin/fulfillment/zones/{zoneId}/methods": {
       "post": {
-        "operationId": "MerchantFulfillmentController_createMethod",
+        "operationId": "AdminFulfillmentController_createMethod",
         "parameters": [
           {
             "name": "zoneId",
@@ -5695,13 +6205,13 @@
           }
         ],
         "tags": [
-          "fulfillment"
+          "admin-fulfillment"
         ]
       }
     },
-    "/merchant/fulfillment/zones/{zoneId}/methods/{methodId}": {
+    "/admin/fulfillment/zones/{zoneId}/methods/{methodId}": {
       "put": {
-        "operationId": "MerchantFulfillmentController_updateMethod",
+        "operationId": "AdminFulfillmentController_updateMethod",
         "parameters": [
           {
             "name": "zoneId",
@@ -5741,11 +6251,11 @@
           }
         ],
         "tags": [
-          "fulfillment"
+          "admin-fulfillment"
         ]
       },
       "delete": {
-        "operationId": "MerchantFulfillmentController_removeMethod",
+        "operationId": "AdminFulfillmentController_removeMethod",
         "parameters": [
           {
             "name": "zoneId",
@@ -5775,7 +6285,7 @@
           }
         ],
         "tags": [
-          "fulfillment"
+          "admin-fulfillment"
         ]
       }
     },
@@ -6281,9 +6791,9 @@
         ]
       }
     },
-    "/merchant/payment-methods/available": {
+    "/admin/payment-methods/available": {
       "get": {
-        "operationId": "MerchantPaymentMethodsController_available",
+        "operationId": "AdminPaymentMethodsController_available",
         "parameters": [],
         "responses": {
           "200": {
@@ -6296,13 +6806,13 @@
           }
         ],
         "tags": [
-          "merchant-payment-methods"
+          "admin-payment-methods"
         ]
       }
     },
-    "/merchant/payment-methods": {
+    "/admin/payment-methods": {
       "get": {
-        "operationId": "MerchantPaymentMethodsController_list",
+        "operationId": "AdminPaymentMethodsController_list",
         "parameters": [],
         "responses": {
           "200": {
@@ -6315,13 +6825,13 @@
           }
         ],
         "tags": [
-          "merchant-payment-methods"
+          "admin-payment-methods"
         ]
       }
     },
-    "/merchant/payment-methods/{paymentMethodCatalogId}/enable": {
+    "/admin/payment-methods/{paymentMethodCatalogId}/enable": {
       "post": {
-        "operationId": "MerchantPaymentMethodsController_enable",
+        "operationId": "AdminPaymentMethodsController_enable",
         "parameters": [
           {
             "name": "paymentMethodCatalogId",
@@ -6343,13 +6853,13 @@
           }
         ],
         "tags": [
-          "merchant-payment-methods"
+          "admin-payment-methods"
         ]
       }
     },
-    "/merchant/payment-methods/{id}": {
+    "/admin/payment-methods/{id}": {
       "patch": {
-        "operationId": "MerchantPaymentMethodsController_update",
+        "operationId": "AdminPaymentMethodsController_update",
         "parameters": [
           {
             "name": "id",
@@ -6381,13 +6891,13 @@
           }
         ],
         "tags": [
-          "merchant-payment-methods"
+          "admin-payment-methods"
         ]
       }
     },
-    "/merchant/payment-methods/{id}/toggle": {
+    "/admin/payment-methods/{id}/toggle": {
       "patch": {
-        "operationId": "MerchantPaymentMethodsController_toggle",
+        "operationId": "AdminPaymentMethodsController_toggle",
         "parameters": [
           {
             "name": "id",
@@ -6419,7 +6929,7 @@
           }
         ],
         "tags": [
-          "merchant-payment-methods"
+          "admin-payment-methods"
         ]
       }
     },
@@ -7252,6 +7762,36 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -7275,6 +7815,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PaginatedPaymentsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
                 }
               }
             }
@@ -7313,6 +7883,36 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -7345,6 +7945,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PaymentDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
                 }
               }
             }
@@ -7386,6 +8016,36 @@
         "responses": {
           "201": {
             "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -7424,6 +8084,36 @@
         "responses": {
           "201": {
             "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -7462,6 +8152,36 @@
         "responses": {
           "201": {
             "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -7500,6 +8220,36 @@
         "responses": {
           "201": {
             "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -7538,6 +8288,36 @@
         "responses": {
           "201": {
             "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -7576,6 +8356,36 @@
         "responses": {
           "201": {
             "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -7614,6 +8424,36 @@
         "responses": {
           "201": {
             "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -7652,6 +8492,36 @@
         "responses": {
           "201": {
             "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -7879,7 +8749,7 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Get merchant analytics overview"
+            "description": "Get admin analytics overview"
           }
         },
         "security": [
@@ -8682,8 +9552,8 @@
     }
   },
   "info": {
-    "title": "General Ecommerce API",
-    "description": "General Ecommerce backend APIs",
+    "title": "Alnjoom Telecom Store API",
+    "description": "Backend APIs for Alnjoom Telecom Store",
     "version": "0.1.0",
     "contact": {}
   },
@@ -9066,6 +9936,41 @@
         "type": "object",
         "properties": {}
       },
+      "CommercialErrorResponseDto": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "number"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "object"
+          },
+          "path": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "requestId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "statusCode",
+          "message",
+          "path",
+          "timestamp",
+          "requestId"
+        ]
+      },
       "FulfillmentSummaryDto": {
         "type": "object",
         "properties": {
@@ -9238,10 +10143,12 @@
             "nullable": true
           },
           "createdAt": {
-            "type": "string"
+            "type": "string",
+            "format": "date-time"
           },
           "updatedAt": {
-            "type": "string"
+            "type": "string",
+            "format": "date-time"
           },
           "customer": {
             "$ref": "#/components/schemas/CustomerSummaryDto"
@@ -9398,7 +10305,8 @@
             "nullable": true
           },
           "createdAt": {
-            "type": "string"
+            "type": "string",
+            "format": "date-time"
           }
         },
         "required": [
@@ -9429,7 +10337,8 @@
             "type": "string"
           },
           "createdAt": {
-            "type": "string"
+            "type": "string",
+            "format": "date-time"
           }
         },
         "required": [
@@ -9457,17 +10366,21 @@
             "type": "string"
           },
           "reservedAt": {
-            "type": "string"
+            "type": "string",
+            "format": "date-time"
           },
           "expiresAt": {
-            "type": "string"
+            "type": "string",
+            "format": "date-time"
           },
           "releasedAt": {
             "type": "string",
+            "format": "date-time",
             "nullable": true
           },
           "consumedAt": {
             "type": "string",
+            "format": "date-time",
             "nullable": true
           },
           "releaseReason": {
@@ -9508,7 +10421,8 @@
             "type": "object"
           },
           "createdAt": {
-            "type": "string"
+            "type": "string",
+            "format": "date-time"
           }
         },
         "required": [
@@ -9615,6 +10529,7 @@
           },
           "customerSubmittedAt": {
             "type": "string",
+            "format": "date-time",
             "nullable": true
           },
           "reviewedBy": {
@@ -9623,6 +10538,7 @@
           },
           "reviewedAt": {
             "type": "string",
+            "format": "date-time",
             "nullable": true
           },
           "reviewNote": {
@@ -9741,10 +10657,12 @@
             "nullable": true
           },
           "createdAt": {
-            "type": "string"
+            "type": "string",
+            "format": "date-time"
           },
           "updatedAt": {
-            "type": "string"
+            "type": "string",
+            "format": "date-time"
           },
           "customer": {
             "$ref": "#/components/schemas/CustomerSummaryDto"
@@ -10285,6 +11203,7 @@
           },
           "customerSubmittedAt": {
             "type": "string",
+            "format": "date-time",
             "nullable": true
           },
           "receiptUrl": {
@@ -10297,6 +11216,7 @@
           },
           "reviewedAt": {
             "type": "string",
+            "format": "date-time",
             "nullable": true
           },
           "reviewedBy": {
@@ -10309,13 +11229,16 @@
           },
           "customerUploadedAt": {
             "type": "string",
+            "format": "date-time",
             "nullable": true
           },
           "createdAt": {
-            "type": "string"
+            "type": "string",
+            "format": "date-time"
           },
           "updatedAt": {
-            "type": "string"
+            "type": "string",
+            "format": "date-time"
           },
           "allowedTransitions": {
             "type": "array",
@@ -10501,6 +11424,7 @@
           },
           "customerSubmittedAt": {
             "type": "string",
+            "format": "date-time",
             "nullable": true
           },
           "receiptUrl": {
@@ -10513,6 +11437,7 @@
           },
           "reviewedAt": {
             "type": "string",
+            "format": "date-time",
             "nullable": true
           },
           "reviewedBy": {
@@ -10525,13 +11450,16 @@
           },
           "customerUploadedAt": {
             "type": "string",
+            "format": "date-time",
             "nullable": true
           },
           "createdAt": {
-            "type": "string"
+            "type": "string",
+            "format": "date-time"
           },
           "updatedAt": {
-            "type": "string"
+            "type": "string",
+            "format": "date-time"
           },
           "allowedTransitions": {
             "type": "array",

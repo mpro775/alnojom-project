@@ -160,7 +160,7 @@ export class AnalyticsController {
 
   @Get('overview')
   @RequirePermissions(PERMISSIONS.storeRead)
-  @ApiOkResponse({ description: 'Get merchant analytics overview' })
+  @ApiOkResponse({ description: 'Get admin analytics overview' })
   async getOverview(
     @CurrentUser() currentUser: AuthUser,
     @Query() query: AnalyticsWindowQueryDto,

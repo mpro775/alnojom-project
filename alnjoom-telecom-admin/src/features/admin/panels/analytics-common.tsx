@@ -1,7 +1,7 @@
 import { Box, Button, MenuItem, Stack, TextField } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FilterBar, EcommerceCoreLoader } from '../components/ui';
-import type { MerchantRequester } from '../merchant-dashboard.types';
+import { FilterBar, AlnjoomLoader } from '../components/ui';
+import type { AdminRequester } from '../admin-dashboard.types';
 
 export interface AnalyticsFilterState {
   preset: 7 | 30 | 90;
@@ -124,13 +124,13 @@ export function AnalyticsFiltersBar({
 export function AnalyticsLoadingState() {
   return (
     <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-      <EcommerceCoreLoader size="md" label="جاري تحديث التحليلات..." compact />
+      <AlnjoomLoader size="md" label="جاري تحديث التحليلات..." compact />
     </Box>
   );
 }
 
 export function useAnalyticsData<T>(
-  request: MerchantRequester,
+  request: AdminRequester,
   path: string,
   query: string,
   pollMs?: number,

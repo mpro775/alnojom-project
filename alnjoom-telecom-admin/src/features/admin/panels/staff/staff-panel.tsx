@@ -27,11 +27,11 @@ import {
   Typography,
 } from '@mui/material';
 
-import type { MerchantRequester } from '../../merchant-dashboard.types';
+import type { AdminRequester } from '../../admin-dashboard.types';
 import type { StaffInvite, StoreRole, StoreRolePreset, TeamRole, UserProfile } from '../../types';
 
 interface StaffPanelProps {
-  request: MerchantRequester;
+  request: AdminRequester;
 }
 
 
@@ -42,18 +42,18 @@ const PERMISSION_LABELS: Record<string, string> = {
   'store:write': 'تعديل إعدادات المتجر',
   'users:read': 'عرض الفريق',
   'users:write': 'إدارة الفريق',
-  'categories:read': 'عرض التصنيفات',
-  'categories:write': 'إدارة التصنيفات',
+  'categories:read': 'عرض الأقسام',
+  'categories:write': 'إدارة الأقسام',
   'brands:read': 'عرض العلامات',
   'brands:write': 'إدارة العلامات',
   'products:read': 'عرض المنتجات',
   'products:write': 'إدارة المنتجات',
   'inventory:read': 'عرض المخزون',
   'inventory:write': '[قديم] إدارة المخزون',
-  'attributes:read': 'عرض الخصائص',
-  'attributes:write': 'إدارة الخصائص',
-  'filters:read': 'عرض الفلاتر',
-  'filters:write': 'إدارة الفلاتر',
+  'attributes:read': 'عرض المواصفات',
+  'attributes:write': 'إدارة المواصفات',
+  'filters:read': 'عرض فلاتر المواصفات',
+  'filters:write': 'إدارة فلاتر المواصفات',
   'media:write': 'رفع الوسائط',
   'orders:read': 'عرض الطلبات',
   'orders:write': '[قديم] إدارة الطلبات',
@@ -432,7 +432,7 @@ export function StaffPanel({ request }: StaffPanelProps) {
             فريق العمل
           </Typography>
           <Typography color="text.secondary">
-            المالك هو منشئ المتجر فقط. أضف أعضاء الفريق بأدوار محددة وصلاحيات داخل سقف كل دور.
+            الحساب الرئيسي يمتلك كامل صلاحيات إدارة النظام. أضف أعضاء الفريق بأدوار محددة وصلاحيات داخل سقف كل دور.
           </Typography>
         </Box>
         <Stack direction="row" spacing={1.5}>
@@ -935,7 +935,7 @@ function getRoleLabel(
   rolePresetByCode: Map<TeamRole, StoreRolePreset>,
 ): string {
   if (role === 'owner') {
-    return 'المالك';
+    return 'المدير الرئيسي';
   }
   return rolePresetByCode.get(role)?.label ?? role;
 }

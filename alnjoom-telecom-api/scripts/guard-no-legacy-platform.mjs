@@ -7,7 +7,7 @@ const extensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']);
 const forbidden = [
   /\bStoreCapabilities(?:Module|Service)\b/,
   /\bStoreReadiness(?:Module|Service|Controller|Repository)?\b/,
-  /merchant\/store-readiness/i,
+  /admin\/store-readiness/i,
   /\bonboardingCompleted\b/,
   /\bplatformPaymentMethodId\b/,
   /\bPlatformPaymentMethod\b/,

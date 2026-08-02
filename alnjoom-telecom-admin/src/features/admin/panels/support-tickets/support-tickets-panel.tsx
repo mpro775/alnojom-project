@@ -17,7 +17,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import type { MerchantRequester } from '../../merchant-dashboard.types';
+import type { AdminRequester } from '../../admin-dashboard.types';
 import type {
   SupportTicketDetailResponse,
   SupportTicketPriority,
@@ -27,7 +27,7 @@ import type {
 import { AppPage, DataTableWrapper, FilterBar, PageHeader } from '../../components/ui';
 
 interface SupportTicketsPanelProps {
-  request: MerchantRequester;
+  request: AdminRequester;
 }
 
 const STATUS_OPTIONS: SupportTicketStatus[] = [

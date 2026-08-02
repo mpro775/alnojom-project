@@ -4,9 +4,9 @@ const { describe, it } = require('node:test');
 const { NotificationsGateway } = require('../dist/notifications/notifications.gateway');
 
 describe('notifications.gateway realtime routing', () => {
-  it('joins merchant sockets to store and store-user rooms', async () => {
+  it('joins admin sockets to store and store-user rooms', async () => {
     const gateway = createGateway();
-    const socket = createSocket('merchant-token');
+    const socket = createSocket('admin-token');
 
     await gateway.handleConnection(socket);
 
@@ -70,13 +70,13 @@ describe('notifications.gateway realtime routing', () => {
 function createGateway() {
   const jwtService = {
     async verifyAsync(token, options) {
-      if (token === 'merchant-token' && options.secret === 'merchant-secret') {
+      if (token === 'admin-token' && options.secret === 'admin-secret') {
         return {
           sub: 'user-1',
           sid: 'session-1',
           storeId: 'store-1',
-          email: 'merchant@example.com',
-          fullName: 'Merchant',
+          email: 'admin@example.com',
+          fullName: 'Admin',
           role: 'owner',
           permissions: [],
         };
@@ -97,7 +97,7 @@ function createGateway() {
 
   const configService = {
     getOrThrow(key) {
-      if (key === 'JWT_ACCESS_SECRET') return 'merchant-secret';
+      if (key === 'JWT_ACCESS_SECRET') return 'admin-secret';
       if (key === 'JWT_CUSTOMER_ACCESS_SECRET') return 'customer-secret';
       throw new Error(`Missing config ${key}`);
     },

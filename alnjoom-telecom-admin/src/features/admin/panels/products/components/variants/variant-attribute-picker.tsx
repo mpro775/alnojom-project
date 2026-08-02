@@ -15,7 +15,7 @@ export function VariantAttributePicker({
   if (attributes.length === 0) {
     return (
       <Typography variant="body2" color="text.secondary">
-        لم يتم إنشاء خصائص بعد.
+        لم يتم إنشاء مواصفات بعد.
       </Typography>
     );
   }

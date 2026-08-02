@@ -1,10 +1,10 @@
 import { Alert, Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
 import { useState } from 'react';
-import type { MerchantRequester } from '../merchant-dashboard.types';
+import type { AdminRequester } from '../admin-dashboard.types';
 import { AppPage, PageHeader } from '../components/ui';
 import { AnalyticsFiltersBar, buildAnalyticsQuery, useAnalyticsFilters } from './analytics-common';
 
-export function ReportsInventoryPanel({ request }: { request: MerchantRequester }) {
+export function ReportsInventoryPanel({ request }: { request: AdminRequester }) {
   const [filters, setFilters] = useAnalyticsFilters();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -45,7 +45,7 @@ export function ReportsInventoryPanel({ request }: { request: MerchantRequester 
         </Box>
       ) : (
         <Typography variant="body2" color="text.secondary">
-          التقرير جاهز للتصدير حسب الفلاتر.
+          التقرير جاهز للتصدير حسب فلاتر المواصفات.
         </Typography>
       )}
     </AppPage>

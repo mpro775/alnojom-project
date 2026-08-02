@@ -3,7 +3,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 
 const root = path.resolve('.');
-const adminRoot = path.resolve('..', 'ecommerce-core-admin');
+const adminRoot = path.resolve('..', 'alnjoom-telecom-admin');
 const failures = [];
 
 async function filesUnder(directory, extensions = ['.ts', '.tsx', '.js', '.mjs']) {
@@ -30,7 +30,7 @@ const transitionFiles = apiFiles.filter((file) => /transition\.service\.ts$/u.te
 const commercialFiles = apiFiles.filter((file) =>
   /[\\/](orders|payments|inventory|promotions|loyalty|affiliates|storefront)[\\/]/u.test(file));
 const adminCommercialFiles = (await filesUnder(path.join(adminRoot, 'src')))
-  .filter((file) => /[\\/]merchant[\\/]panels[\\/](orders|payments)[\\/]/u.test(file));
+  .filter((file) => /[\\/]admin[\\/]panels[\\/](orders|payments)[\\/]/u.test(file));
 
 await assertNoPattern(
   apiFiles,

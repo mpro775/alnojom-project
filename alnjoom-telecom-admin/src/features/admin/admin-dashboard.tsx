@@ -1,68 +1,68 @@
 import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react';
 import { Alert, Snackbar, useMediaQuery, useTheme } from '@mui/material';
 import {
-  clearMerchantSessionCache,
-  merchantRequestJson,
-  type MerchantRequestOptions,
+  clearAdminSessionCache,
+  adminRequestJson,
+  type AdminRequestOptions,
 } from './api-client';
 import {
-  MERCHANT_DRAWER_WIDTH,
-  MERCHANT_NAV_ITEMS,
-  MERCHANT_PRIMARY_MOBILE_TABS,
-} from './constants/merchant-navigation';
-import { MerchantDashboardLayout } from './components/layout/merchant-dashboard-layout';
-import { MerchantMobileNav } from './components/navigation/merchant-mobile-nav';
-import { MerchantSidebar } from './components/navigation/merchant-sidebar';
-import { MerchantTopBar } from './components/navigation/merchant-top-bar';
-import { useMerchantTabState } from './hooks/use-merchant-tab-state';
-import { useMerchantNotificationsRealtime } from './hooks/use-merchant-notifications-realtime';
+  ADMIN_DRAWER_WIDTH,
+  ADMIN_NAV_ITEMS,
+  ADMIN_PRIMARY_MOBILE_TABS,
+} from './constants/admin-navigation';
+import { AdminDashboardLayout } from './components/layout/admin-dashboard-layout';
+import { AdminMobileNav } from './components/navigation/admin-mobile-nav';
+import { AdminSidebar } from './components/navigation/admin-sidebar';
+import { AdminTopBar } from './components/navigation/admin-top-bar';
+import { useAdminTabState } from './hooks/use-admin-tab-state';
+import { useAdminNotificationsRealtime } from './hooks/use-admin-notifications-realtime';
 import { useNotificationSound } from './hooks/use-notification-sound';
-import { renderMerchantPanel } from './panel-registry';
+import { renderAdminPanel } from './panel-registry';
 
 import type {
-  MerchantRequester,
-  MerchantTabKey,
-  MerchantNavItem,
-} from './merchant-dashboard.types';
-import type { MerchantSession, StoreSettings } from './types';
+  AdminRequester,
+  AdminTabKey,
+  AdminNavItem,
+} from './admin-dashboard.types';
+import type { AdminSession, StoreSettings } from './types';
 
 export type {
-  MerchantNavItem,
-  MerchantPanelProps,
-  MerchantRequester,
-  MerchantTabKey,
-} from './merchant-dashboard.types';
+  AdminNavItem,
+  AdminPanelProps,
+  AdminRequester,
+  AdminTabKey,
+} from './admin-dashboard.types';
 
-interface MerchantDashboardProps {
-  session: MerchantSession;
-  onSessionUpdate: (session: MerchantSession) => void;
+interface AdminDashboardProps {
+  session: AdminSession;
+  onSessionUpdate: (session: AdminSession) => void;
   themeMode: 'light' | 'dark';
   onToggleThemeMode: (origin?: { x: number; y: number }) => void;
   onSignedOut: () => void;
 }
 
-export function MerchantDashboard({
+export function AdminDashboard({
   session,
   onSessionUpdate,
   themeMode,
   onToggleThemeMode,
   onSignedOut,
-}: MerchantDashboardProps) {
+}: AdminDashboardProps) {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [bannerMessage, setBannerMessage] = useState('');
   const [userMenuAnchorEl, setUserMenuAnchorEl] = useState<null | HTMLElement>(null);
-  const [activeTab, setActiveTab] = useMerchantTabState('overview');
+  const [activeTab, setActiveTab] = useAdminTabState('overview');
   const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
   const { play: playNotificationSound } = useNotificationSound();
 
-  const request = useCallback<MerchantRequester>(
-    async <T,>(path: string, init?: RequestInit, options?: MerchantRequestOptions) =>
-      merchantRequestJson<T>({
+  const request = useCallback<AdminRequester>(
+    async <T,>(path: string, init?: RequestInit, options?: AdminRequestOptions) =>
+      adminRequestJson<T>({
         session,
         path,
         init,
@@ -85,7 +85,7 @@ export function MerchantDashboard({
   );
 
   const { unreadCount: notificationUnreadCount, notificationRealtimeVersion } =
-    useMerchantNotificationsRealtime(session, request, handleNotificationCreated);
+    useAdminNotificationsRealtime(session, request, handleNotificationCreated);
 
   useEffect(() => {
     if (isDesktop) {
@@ -117,7 +117,7 @@ export function MerchantDashboard({
   }, [request]);
 
   const activeLabel = useMemo(() => {
-    for (const group of MERCHANT_NAV_ITEMS) {
+    for (const group of ADMIN_NAV_ITEMS) {
       if (group.children) {
         const found = group.children.find((child) => child.key === activeTab);
         if (found) return found.label;
@@ -128,17 +128,17 @@ export function MerchantDashboard({
     return 'لوحة التحكم';
   }, [activeTab]);
 
-  const primaryMobileItems = useMemo<MerchantNavItem[]>(() => {
-    const allItems: MerchantNavItem[] = [];
-    MERCHANT_NAV_ITEMS.forEach((group) => {
+  const primaryMobileItems = useMemo<AdminNavItem[]>(() => {
+    const allItems: AdminNavItem[] = [];
+    ADMIN_NAV_ITEMS.forEach((group) => {
       if (group.children) {
-        allItems.push(...(group.children as MerchantNavItem[]));
+        allItems.push(...(group.children as AdminNavItem[]));
       } else {
-        allItems.push(group as MerchantNavItem);
+        allItems.push(group as AdminNavItem);
       }
     });
     return allItems.filter((item) =>
-      MERCHANT_PRIMARY_MOBILE_TABS.includes(item.key as MerchantTabKey),
+      ADMIN_PRIMARY_MOBILE_TABS.includes(item.key as AdminTabKey),
     );
   }, []);
 
@@ -153,7 +153,7 @@ export function MerchantDashboard({
   }, []);
 
   const handleSelectTab = useCallback(
-    (nextTab: MerchantTabKey) => {
+    (nextTab: AdminTabKey) => {
       setActiveTab(nextTab);
       setBannerMessage('');
       if (!isDesktop) {
@@ -177,7 +177,7 @@ export function MerchantDashboard({
     } catch {
       // Ignore sign-out network failures and clear session locally.
     }
-    clearMerchantSessionCache();
+    clearAdminSessionCache();
     onSignedOut();
   }, [onSignedOut, request]);
 
@@ -188,12 +188,12 @@ export function MerchantDashboard({
 
   return (
     <>
-      <MerchantDashboardLayout
+      <AdminDashboardLayout
         bannerMessage={bannerMessage}
         sidebar={
-        <MerchantSidebar
-          drawerWidth={MERCHANT_DRAWER_WIDTH}
-          navItems={MERCHANT_NAV_ITEMS}
+        <AdminSidebar
+          drawerWidth={ADMIN_DRAWER_WIDTH}
+          navItems={ADMIN_NAV_ITEMS}
           activeTab={activeTab}
           isDesktop={isDesktop}
           mobileOpen={mobileSidebarOpen}
@@ -203,7 +203,7 @@ export function MerchantDashboard({
         />
       }
       topBar={
-        <MerchantTopBar
+        <AdminTopBar
           activeLabel={activeLabel}
           session={session}
 
@@ -231,7 +231,7 @@ export function MerchantDashboard({
         />
       }
       mobileNavigation={
-        <MerchantMobileNav
+        <AdminMobileNav
           primaryItems={primaryMobileItems}
           activeTab={activeTab}
           onSelectTab={handleSelectTab}
@@ -239,7 +239,7 @@ export function MerchantDashboard({
         />
       }
     >
-      {renderMerchantPanel(activeTab, {
+      {renderAdminPanel(activeTab, {
         session,
         request,
         storeSettings,
@@ -247,7 +247,7 @@ export function MerchantDashboard({
         notificationRealtimeVersion,
         onNavigate: handleSelectTab,
       })}
-    </MerchantDashboardLayout>
+    </AdminDashboardLayout>
 
     <Snackbar
       open={toastOpen}

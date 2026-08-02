@@ -21,7 +21,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
-import type { MerchantRequester } from '../../merchant-dashboard.types';
+import type { AdminRequester } from '../../admin-dashboard.types';
 import { AppPage, DataTableWrapper, PageHeader, SectionCard } from '../../components/ui';
 import type {
   PaymentStatus,
@@ -34,7 +34,7 @@ import { clearFieldErrors, isApiError, mapFieldErrors } from '../../../../lib/ap
 import { formatCommercialDate, formatCommercialMoney, newIdempotencyKey } from '../../../../lib/commercial-format';
 
 interface PaymentsPanelProps {
-  request: MerchantRequester;
+  request: AdminRequester;
 }
 
 type AdminPaymentCommand = 'startPaymentReview' | 'approvePayment' | 'rejectPayment' |
@@ -114,8 +114,8 @@ export function PaymentsPanel({ request }: PaymentsPanelProps) {
     setMessage({ text: '', type: 'info' });
     try {
       const [available, configured] = await Promise.all([
-        request<PaymentMethodCatalogItem[]>('/merchant/payment-methods/available', { method: 'GET' }),
-        request<StorePaymentMethod[]>('/merchant/payment-methods', { method: 'GET' }),
+        request<PaymentMethodCatalogItem[]>('/admin/payment-methods/available', { method: 'GET' }),
+        request<StorePaymentMethod[]>('/admin/payment-methods', { method: 'GET' }),
       ]);
       setAvailableMethods(available ?? []);
       setStoreMethods(configured ?? []);
@@ -129,7 +129,7 @@ export function PaymentsPanel({ request }: PaymentsPanelProps) {
   async function enableCatalogMethod(paymentMethodCatalogId: string): Promise<void> {
     setActionLoading(true);
     try {
-      await request(`/merchant/payment-methods/${paymentMethodCatalogId}/enable`, { method: 'POST' });
+      await request(`/admin/payment-methods/${paymentMethodCatalogId}/enable`, { method: 'POST' });
       await loadPaymentSettings();
     } catch (err) {
       setMessage({ text: err instanceof Error ? err.message : 'تعذر إضافة طريقة الدفع', type: 'error' });
@@ -142,7 +142,7 @@ export function PaymentsPanel({ request }: PaymentsPanelProps) {
     setActionLoading(true);
     setMethodFieldErrors((current) => ({ ...current, [method.id]: {} }));
     try {
-      await request(`/merchant/payment-methods/${method.id}`, {
+      await request(`/admin/payment-methods/${method.id}`, {
         method: 'PATCH',
         body: JSON.stringify({
           isEnabled: patch.isEnabled ?? method.isEnabled,

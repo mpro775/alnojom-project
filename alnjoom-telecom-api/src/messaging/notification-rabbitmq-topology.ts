@@ -25,26 +25,26 @@ export function resolveNotificationQueueNames(
   configService: ConfigService,
 ): NotificationQueueNames {
   return {
-    mainQueue: configService.get<string>('NOTIFICATIONS_MAIN_QUEUE', 'notifications.order-events'),
+    mainQueue: configService.get<string>('NOTIFICATIONS_MAIN_QUEUE', 'alnjoom-telecom.notifications'),
     dlqQueue: configService.get<string>(
       'NOTIFICATIONS_DLQ_QUEUE',
-      'notifications.order-events.dlq',
+      'alnjoom-telecom.notifications.dlq',
     ),
     retryCreatedQueue: configService.get<string>(
       'NOTIFICATIONS_RETRY_CREATED_QUEUE',
-      'notifications.order-created.retry',
+      'alnjoom-telecom.notifications.retry.created',
     ),
     retryStatusQueue: configService.get<string>(
       'NOTIFICATIONS_RETRY_STATUS_QUEUE',
-      'notifications.order-status.retry',
+      'alnjoom-telecom.notifications.retry.status',
     ),
     retryInventoryQueue: configService.get<string>(
       'NOTIFICATIONS_RETRY_INVENTORY_QUEUE',
-      'notifications.inventory.retry',
+      'alnjoom-telecom.notifications.retry.inventory',
     ),
     retryGenericQueue: configService.get<string>(
       'NOTIFICATIONS_RETRY_GENERIC_QUEUE',
-      'notifications.generic.retry',
+      'alnjoom-telecom.notifications.retry.generic',
     ),
   };
 }

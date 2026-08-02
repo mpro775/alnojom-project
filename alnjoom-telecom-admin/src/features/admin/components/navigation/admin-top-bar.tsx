@@ -25,15 +25,15 @@ import {
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import { useState, type MouseEvent } from 'react';
-import type { MerchantSession } from '../../types';
-import type { MerchantRequester } from '../../merchant-dashboard.types';
+import type { AdminSession } from '../../types';
+import type { AdminRequester } from '../../admin-dashboard.types';
 import { ADMIN_TOKENS } from '../../../../theme/tokens';
-import { MerchantNotificationsMenu } from '../notifications/merchant-notifications-menu';
-import { openMerchantAccessibilitySettings } from '../../../accessibility/merchant-accessibility-settings';
+import { AdminNotificationsMenu } from '../notifications/admin-notifications-menu';
+import { openAdminAccessibilitySettings } from '../../../accessibility/admin-accessibility-settings';
 
-interface MerchantTopBarProps {
+interface AdminTopBarProps {
   activeLabel: string;
-  session: MerchantSession;
+  session: AdminSession;
 
   storeName?: string | null;
   themeMode: 'light' | 'dark';
@@ -47,14 +47,12 @@ interface MerchantTopBarProps {
   onGoToStaff: () => void;
   notificationUnreadCount?: number;
   onOpenNotifications: () => void;
-  request: MerchantRequester;
+  request: AdminRequester;
   notificationRealtimeVersion?: number;
   onSignOut: () => void;
 }
 
-const ecommerce_core_ICON_SRC = '/brand/ecommerce_core-icon.png';
-
-export function MerchantTopBar({
+export function AdminTopBar({
   activeLabel,
   session,
 
@@ -73,7 +71,7 @@ export function MerchantTopBar({
   request,
   notificationRealtimeVersion = 0,
   onSignOut,
-}: MerchantTopBarProps) {
+}: AdminTopBarProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<HTMLElement | null>(null);
@@ -84,8 +82,7 @@ export function MerchantTopBar({
   const controlHover = isDark
     ? alpha(theme.palette.common.white, 0.07)
     : alpha(theme.palette.primary.main, 0.08);
-  const resolvedStoreName = storeName?.trim() || 'متجرك';
-  const resolvedLogoSrc = ecommerce_core_ICON_SRC;
+  const resolvedStoreName = storeName?.trim() || 'نجوم تليكوم';
 
   function handleToggleThemeMode(event: MouseEvent<HTMLButtonElement>): void {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -167,16 +164,18 @@ export function MerchantTopBar({
             }}
           >
             <Box
-              component="img"
-              src={resolvedLogoSrc}
-              alt={resolvedStoreName}
+              aria-label="Alnjoom Telecom"
+              role="img"
               sx={{
                 width: 27,
                 height: 27,
-                objectFit: 'contain',
-                filter: `drop-shadow(0 6px 12px ${alpha(theme.palette.primary.main, 0.16)})`,
+                color: 'primary.main',
+                display: 'grid',
+                placeItems: 'center',
               }}
-            />
+            >
+              <StorefrontIcon fontSize="small" />
+            </Box>
           </Box>
 
           <Box sx={{ minWidth: 0 }}>
@@ -189,7 +188,7 @@ export function MerchantTopBar({
                 lineHeight: 1.2,
               }}
             >
-              لوحة التاجر
+              {resolvedStoreName} — لوحة الإدارة
             </Typography>
             <Typography
               variant="h6"
@@ -277,7 +276,7 @@ export function MerchantTopBar({
             </Badge>
           </IconButton>
 
-          <MerchantNotificationsMenu
+          <AdminNotificationsMenu
             anchorEl={notificationAnchorEl}
             onClose={() => setNotificationAnchorEl(null)}
             onViewAll={() => {
@@ -289,8 +288,14 @@ export function MerchantTopBar({
           />
 
           <Box
+            component="button"
+            type="button"
+            aria-label={`قائمة المستخدم: ${session.user.fullName}`}
+            aria-haspopup="menu"
+            aria-expanded={Boolean(userMenuAnchorEl)}
             onClick={onOpenUserMenu}
             sx={{
+              font: 'inherit',
               display: 'flex',
               alignItems: 'center',
               gap: 1,
@@ -340,7 +345,7 @@ export function MerchantTopBar({
                 {session.user.fullName}
               </Typography>
               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
-                {session.user.role === 'owner' ? 'المالك' : 'عضو فريق'}
+                {session.user.role === 'owner' ? 'المدير الرئيسي' : 'عضو فريق'}
               </Typography>
             </Box>
 
@@ -405,7 +410,7 @@ export function MerchantTopBar({
             <MenuItem
               onClick={() => {
                 onCloseUserMenu();
-                openMerchantAccessibilitySettings();
+                openAdminAccessibilitySettings();
               }}
               sx={{ direction: 'rtl' }}
             >

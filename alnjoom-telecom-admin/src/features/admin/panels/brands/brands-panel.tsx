@@ -13,12 +13,12 @@ import {
   Typography,
 } from '@mui/material';
 
-import type { MerchantRequester } from '../../merchant-dashboard.types';
+import type { AdminRequester } from '../../admin-dashboard.types';
 import type { Brand, MediaAsset, PresignedMediaUpload } from '../../types';
-import { FloatingActionButton, EcommerceCoreLoader } from '../../components/ui';
+import { FloatingActionButton, AlnjoomLoader } from '../../components/ui';
 
 interface BrandsPanelProps {
-  request: MerchantRequester;
+  request: AdminRequester;
 }
 
 const emptyForm = {
@@ -284,7 +284,7 @@ export function BrandsPanel({ request }: BrandsPanelProps) {
       <Paper elevation={0} sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', overflow: 'hidden', p: 2 }}>
         {loading ? (
           <Box sx={{ py: 6, display: 'flex', justifyContent: 'center' }}>
-            <EcommerceCoreLoader size="md" label="جاري تحميل العلامات..." compact />
+            <AlnjoomLoader size="md" label="جاري تحميل العلامات..." compact />
           </Box>
         ) : brands.length === 0 ? (
           <Box sx={{ py: 6, textAlign: 'center' }}>
@@ -380,7 +380,7 @@ function buildBrandPayload(
   return payload;
 }
 
-async function uploadMediaAsset(request: MerchantRequester, file: File): Promise<MediaAsset> {
+async function uploadMediaAsset(request: AdminRequester, file: File): Promise<MediaAsset> {
   const presigned = await request<PresignedMediaUpload>('/media/presign-upload', {
     method: 'POST',
     body: JSON.stringify({

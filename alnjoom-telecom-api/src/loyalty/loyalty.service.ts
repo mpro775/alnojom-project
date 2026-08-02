@@ -322,7 +322,7 @@ export class LoyaltyService {
         balanceAfter: nextBalance,
         referenceEntryId: null,
         reason: input.reason?.trim() ?? null,
-        metadata: { source: 'merchant_adjustment' },
+        metadata: { source: 'admin_adjustment' },
         createdByStoreUserId: currentUser.id,
       });
 

@@ -3,11 +3,11 @@ import type { AuthUser } from '../auth/interfaces/auth-user.interface';
 import { CustomerEngagementService } from '../customers/customer-engagement.service';
 import type { CustomerUser } from '../customers/interfaces/customer-user.interface';
 import {
-  getMerchantNotificationEvent,
-  listMerchantNotificationEvents,
-  type MerchantNotificationCategory,
-  type MerchantNotificationEventDefinition,
-  type MerchantNotificationSeverity,
+  getAdminNotificationEvent,
+  listAdminNotificationEvents,
+  type AdminNotificationCategory,
+  type AdminNotificationEventDefinition,
+  type AdminNotificationSeverity,
 } from './notification-events.registry';
 import {
   NotificationsRepository,
@@ -108,7 +108,7 @@ export class NotificationsService {
         type: 'notification.delivery.failed',
         title: `Notification delivery failed: ${input.eventType}`,
         body: input.errorMessage,
-        actionUrl: '/merchant?tab=notificationsCenter',
+        actionUrl: '/admin?tab=notificationsCenter',
         metadata: {
           eventType: input.eventType,
           attempts: input.attempts,
@@ -127,14 +127,14 @@ export class NotificationsService {
     title: string;
     body: string;
     actionUrl?: string | null;
-    category?: MerchantNotificationCategory | null;
-    severity?: MerchantNotificationSeverity;
+    category?: AdminNotificationCategory | null;
+    severity?: AdminNotificationSeverity;
     source?: string | null;
     dedupeKey?: string | null;
     expiresAt?: Date | string | null;
     metadata?: Record<string, unknown>;
   }): Promise<Record<string, unknown>> {
-    const definition = getMerchantNotificationEvent(input.type);
+    const definition = getAdminNotificationEvent(input.type);
     const category = input.category ?? definition?.category ?? null;
     const severity = input.severity ?? definition?.severity ?? 'info';
     const source = input.source ?? 'system';
@@ -181,8 +181,8 @@ export class NotificationsService {
     query: {
       unreadOnly: boolean;
       type?: string;
-      category?: MerchantNotificationCategory;
-      severity?: MerchantNotificationSeverity;
+      category?: AdminNotificationCategory;
+      severity?: AdminNotificationSeverity;
       dateFrom?: Date;
       dateTo?: Date;
       page: number;
@@ -329,7 +329,7 @@ export class NotificationsService {
     const stored = new Map(
       rows.map((row) => [`${row.event_type}:${row.channel}:${row.recipient_type}`, row]),
     );
-    const defaults = listMerchantNotificationEvents()
+    const defaults = listAdminNotificationEvents()
       .filter((event) => event.recipientType === 'store' || event.recipientType === 'store_user')
       .map((event) => {
         const recipientType = event.recipientType === 'store_user' ? 'store_user' : 'store';
@@ -399,9 +399,9 @@ export class NotificationsService {
   }
 
   private resolveChannel(eventType: string): string {
-    const definition = getMerchantNotificationEvent(eventType);
+    const definition = getAdminNotificationEvent(eventType);
     if (definition?.recipientType === 'store' || definition?.recipientType === 'store_user') {
-      return 'merchant';
+      return 'admin';
     }
     if (definition?.recipientType === 'customer') {
       return 'customer';
@@ -420,7 +420,7 @@ export class NotificationsService {
     eventType: string;
     payload: Record<string, unknown>;
   }): Promise<void> {
-    const definition = getMerchantNotificationEvent(input.eventType);
+    const definition = getAdminNotificationEvent(input.eventType);
     if (!definition) {
       this.logger.log(`Ignored undefined notification event: ${input.eventType}`);
       return;
@@ -467,7 +467,7 @@ export class NotificationsService {
     orderId: string | null;
     eventType: string;
     payload: Record<string, unknown>;
-    definition: MerchantNotificationEventDefinition;
+    definition: AdminNotificationEventDefinition;
   }): Promise<void> {
     const dedupeKey = input.definition.dedupeKey
       ? this.renderTemplate(input.definition.dedupeKey, input.payload)
@@ -514,7 +514,7 @@ export class NotificationsService {
       return;
     }
 
-    const definition = getMerchantNotificationEvent(customerEventType);
+    const definition = getAdminNotificationEvent(customerEventType);
     if (!definition || !definition.isPersistent || definition.defaultFrequency === 'mute') {
       return;
     }
@@ -678,8 +678,8 @@ export class NotificationsService {
       recipientStoreUserId: row.recipient_store_user_id,
       recipientCustomerId: row.recipient_customer_id,
       eventType: row.event_type,
-      category: getMerchantNotificationEvent(row.event_type)?.category ?? null,
-      severity: getMerchantNotificationEvent(row.event_type)?.severity ?? 'info',
+      category: getAdminNotificationEvent(row.event_type)?.category ?? null,
+      severity: getAdminNotificationEvent(row.event_type)?.severity ?? 'info',
       channel: row.channel,
       isEnabled: row.is_enabled,
       frequency: row.frequency,

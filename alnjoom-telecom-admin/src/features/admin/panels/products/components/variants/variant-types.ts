@@ -1,7 +1,7 @@
 import type { Attribute, Product, Warehouse } from '../../../../types';
-import type { MerchantRequester } from '../../../../merchant-dashboard.types';
+import type { AdminRequester } from '../../../../admin-dashboard.types';
 
-export { type MerchantRequester };
+export { type AdminRequester };
 
 export interface ProductWarehouseAllocationRow {
   warehouseId: string;
@@ -40,7 +40,7 @@ export interface VariantForm {
 }
 
 export interface ProductVariantsSectionProps {
-  request: MerchantRequester;
+  request: AdminRequester;
   selectedProduct: Product | null;
   attributes: Attribute[];
   warehouses: Warehouse[];

@@ -1,5 +1,5 @@
 import { Alert, Box, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
-import type { MerchantRequester } from '../merchant-dashboard.types';
+import type { AdminRequester } from '../admin-dashboard.types';
 import type { AnalyticsLive } from '../types';
 import { AppPage, PageHeader, StatCard } from '../components/ui';
 import { AnalyticsFiltersBar, AnalyticsLoadingState, buildAnalyticsQuery, useAnalyticsData, useAnalyticsFilters } from './analytics-common';
@@ -8,7 +8,7 @@ function money(value: number): string {
   return `${value.toFixed(2)} YER`;
 }
 
-export function AnalyticsLivePanel({ request }: { request: MerchantRequester }) {
+export function AnalyticsLivePanel({ request }: { request: AdminRequester }) {
   const [filters, setFilters] = useAnalyticsFilters();
   const query = buildAnalyticsQuery(filters, { liveMinutes: filters.liveMinutes || 15 });
   const { data, loading, error, refresh } = useAnalyticsData<AnalyticsLive>(

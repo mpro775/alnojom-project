@@ -1,4 +1,9 @@
-import { CheckCircleIcon, ExpandLess, ExpandMore } from '../../../../components/icons';
+import {
+  CheckCircleIcon,
+  ExpandLess,
+  ExpandMore,
+  StorefrontIcon,
+} from '../../../../components/icons';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Box,
@@ -14,22 +19,20 @@ import {
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import { ADMIN_TOKENS } from '../../../../theme/tokens';
-import type { MerchantNavItem, MerchantTabKey } from '../../merchant-dashboard.types';
+import type { AdminNavItem, AdminTabKey } from '../../admin-dashboard.types';
 
-interface MerchantSidebarProps {
+interface AdminSidebarProps {
   drawerWidth: number;
-  navItems: MerchantNavItem[];
-  activeTab: MerchantTabKey;
+  navItems: AdminNavItem[];
+  activeTab: AdminTabKey;
   isDesktop: boolean;
   mobileOpen: boolean;
   storeName?: string | null;
   onCloseMobile: () => void;
-  onSelectTab: (tab: MerchantTabKey) => void;
+  onSelectTab: (tab: AdminTabKey) => void;
 }
 
-const ecommerce_core_ICON_SRC = '/brand/ecommerce_core-icon.png';
-
-export function MerchantSidebar({
+export function AdminSidebar({
   drawerWidth,
   navItems,
   activeTab,
@@ -38,7 +41,7 @@ export function MerchantSidebar({
   storeName,
   onCloseMobile,
   onSelectTab,
-}: MerchantSidebarProps) {
+}: AdminSidebarProps) {
   const theme = useTheme();
   const isRtl = theme.direction === 'rtl';
   const isDark = theme.palette.mode === 'dark';
@@ -54,8 +57,7 @@ export function MerchantSidebar({
   const iconBg = isDark
     ? alpha(theme.palette.common.white, 0.045)
     : alpha(theme.palette.primary.main, 0.08);
-  const resolvedStoreName = storeName?.trim() || 'متجرك';
-  const resolvedLogoSrc = ecommerce_core_ICON_SRC;
+  const resolvedStoreName = storeName?.trim() || 'نجوم تليكوم';
   const activeRailColor = theme.palette.primary.main;
   const activeEdgeGlow = `linear-gradient(90deg, transparent 0%, ${alpha(
     theme.palette.primary.main,
@@ -81,7 +83,7 @@ export function MerchantSidebar({
     setOpenGroups((prev) => (prev[groupKey] ? {} : { [groupKey]: true }));
   };
 
-  const renderNavIcon = (icon: MerchantNavItem['icon'], isActive: boolean) =>
+  const renderNavIcon = (icon: AdminNavItem['icon'], isActive: boolean) =>
     icon ? (
       <Box
         sx={{
@@ -150,16 +152,18 @@ export function MerchantSidebar({
           }}
         >
           <Box
-            component="img"
-            src={resolvedLogoSrc}
-            alt={resolvedStoreName}
+            aria-label="Alnjoom Telecom"
+            role="img"
             sx={{
               width: 30,
               height: 30,
-              objectFit: 'contain',
-              filter: `drop-shadow(0 8px 14px ${alpha(theme.palette.primary.main, 0.18)})`,
+              color: 'primary.main',
+              display: 'grid',
+              placeItems: 'center',
             }}
-          />
+          >
+            <StorefrontIcon fontSize="small" />
+          </Box>
         </Box>
         <Box sx={{ minWidth: 0 }}>
           <Typography
@@ -169,7 +173,7 @@ export function MerchantSidebar({
             {resolvedStoreName}
           </Typography>
           <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>
-            لوحة إدارة التاجر
+            لوحة إدارة نجوم تليكوم
           </Typography>
         </Box>
       </Box>
@@ -209,7 +213,7 @@ export function MerchantSidebar({
             return (
               <ListItem key={group.key} disablePadding sx={{ mb: 0.5 }}>
                 <ListItemButton
-                  onClick={() => onSelectTab(group.key as MerchantTabKey)}
+                  onClick={() => onSelectTab(group.key as AdminTabKey)}
                   sx={{
                     position: 'relative',
                     overflow: 'hidden',
@@ -288,8 +292,8 @@ export function MerchantSidebar({
           }
 
           return (
-            <Box key={group.key} sx={{ mb: 0.5 }}>
-              <ListItem disablePadding>
+            <Box component="li" key={group.key} sx={{ mb: 0.5 }}>
+              <ListItem component="div" disablePadding>
                 <ListItemButton
                   onClick={() => handleToggleGroup(group.key)}
                   sx={{
@@ -391,7 +395,7 @@ export function MerchantSidebar({
                     return (
                       <ListItemButton
                         key={child.key}
-                        onClick={() => onSelectTab(child.key as MerchantTabKey)}
+                        onClick={() => onSelectTab(child.key as AdminTabKey)}
                         sx={{
                           position: 'relative',
                           minHeight: 34,

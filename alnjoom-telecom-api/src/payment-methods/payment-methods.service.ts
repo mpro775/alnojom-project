@@ -81,7 +81,7 @@ export class PaymentMethodsService {
     private readonly mediaRepository: MediaRepository,
   ) {}
 
-  async listAvailableForMerchant(): Promise<PaymentMethodCatalogResponse[]> {
+  async listAvailableForAdmin(): Promise<PaymentMethodCatalogResponse[]> {
     const records = await this.repository.listBaseCatalog(false);
     return Promise.all(records.map((method) => this.mapCatalogMethod(method)));
   }

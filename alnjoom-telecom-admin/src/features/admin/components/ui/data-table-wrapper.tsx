@@ -8,7 +8,7 @@ interface DataTableWrapperProps {
   label?: string;
 }
 
-export function DataTableWrapper({ children, label = 'جدول بيانات لوحة التاجر' }: DataTableWrapperProps) {
+export function DataTableWrapper({ children, label = 'جدول بيانات لوحة إدارة نجوم تليكوم' }: DataTableWrapperProps) {
   return (
     <Paper
       elevation={0}

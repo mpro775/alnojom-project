@@ -16,13 +16,13 @@ import {
   CircularProgress,
 } from '@mui/material';
 
-import type { MerchantRequester } from '../../merchant-dashboard.types';
+import type { AdminRequester } from '../../admin-dashboard.types';
 import type { Category, MediaAsset, PresignedMediaUpload } from '../../types';
 import { FloatingActionButton } from '../../components/ui';
 import { normalizeSlug, sanitizeSlugInput } from '../../utils/slug';
 
 interface CategoriesPanelProps {
-  request: MerchantRequester;
+  request: AdminRequester;
 }
 
 const emptyForm = {
@@ -74,7 +74,7 @@ export function CategoriesPanel({ request }: CategoriesPanelProps) {
       const data = await request<Category[]>('/categories', { method: 'GET' });
       setCategories(data ?? []);
     } catch (error) {
-      setMessage({ text: error instanceof Error ? error.message : 'تعذر تحميل التصنيفات', type: 'error' });
+      setMessage({ text: error instanceof Error ? error.message : 'تعذر تحميل الأقسام', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -106,10 +106,10 @@ export function CategoriesPanel({ request }: CategoriesPanelProps) {
       });
       setForm(emptyForm);
       await loadCategories();
-      setMessage({ text: 'تم إنشاء التصنيف بنجاح', type: 'success' });
+      setMessage({ text: 'تم إنشاء القسم بنجاح', type: 'success' });
       setViewMode('list');
     } catch (error) {
-      setMessage({ text: error instanceof Error ? error.message : 'تعذر إنشاء التصنيف', type: 'error' });
+      setMessage({ text: error instanceof Error ? error.message : 'تعذر إنشاء القسم', type: 'error' });
     } finally {
       setActionLoading(false);
     }
@@ -125,17 +125,17 @@ export function CategoriesPanel({ request }: CategoriesPanelProps) {
         body: JSON.stringify(buildCategoryPayload(form, formMediaAssetId, formBackgroundMediaAssetId, true)),
       });
       await loadCategories();
-      setMessage({ text: 'تم تحديث التصنيف بنجاح', type: 'success' });
+      setMessage({ text: 'تم تحديث القسم بنجاح', type: 'success' });
       setViewMode('list');
     } catch (error) {
-      setMessage({ text: error instanceof Error ? error.message : 'تعذر تحديث التصنيف', type: 'error' });
+      setMessage({ text: error instanceof Error ? error.message : 'تعذر تحديث القسم', type: 'error' });
     } finally {
       setActionLoading(false);
     }
   }
 
   async function deleteCategory(): Promise<void> {
-    if (!selectedId || !window.confirm('هل أنت متأكد من حذف هذا التصنيف؟')) return;
+    if (!selectedId || !window.confirm('هل أنت متأكد من حذف هذا القسم؟')) return;
     setActionLoading(true);
     setMessage({ text: '', type: 'info' });
     try {
@@ -149,17 +149,17 @@ export function CategoriesPanel({ request }: CategoriesPanelProps) {
       setFormBackgroundMediaAssetId(null);
       setFormBackgroundImageUrl(null);
       await loadCategories();
-      setMessage({ text: 'تم حذف التصنيف بنجاح', type: 'success' });
+      setMessage({ text: 'تم حذف القسم بنجاح', type: 'success' });
       setViewMode('list');
     } catch (error) {
-      setMessage({ text: error instanceof Error ? error.message : 'تعذر حذف التصنيف', type: 'error' });
+      setMessage({ text: error instanceof Error ? error.message : 'تعذر حذف القسم', type: 'error' });
     } finally {
       setActionLoading(false);
     }
   }
 
   async function deleteCategoryFromList(category: Category): Promise<void> {
-    if (!window.confirm('هل أنت متأكد من حذف هذا التصنيف؟')) return;
+    if (!window.confirm('هل أنت متأكد من حذف هذا القسم؟')) return;
     setActionLoading(true);
     setMessage({ text: '', type: 'info' });
     try {
@@ -167,9 +167,9 @@ export function CategoriesPanel({ request }: CategoriesPanelProps) {
         method: 'DELETE',
       });
       await loadCategories();
-      setMessage({ text: 'تم حذف التصنيف بنجاح', type: 'success' });
+      setMessage({ text: 'تم حذف القسم بنجاح', type: 'success' });
     } catch (error) {
-      setMessage({ text: error instanceof Error ? error.message : 'تعذر حذف التصنيف', type: 'error' });
+      setMessage({ text: error instanceof Error ? error.message : 'تعذر حذف القسم', type: 'error' });
     } finally {
       setActionLoading(false);
     }
@@ -275,9 +275,9 @@ export function CategoriesPanel({ request }: CategoriesPanelProps) {
         ),
       );
       setCategories(nextCategories);
-      setMessage({ text: 'تم تحديث ترتيب شجرة التصنيفات', type: 'success' });
+      setMessage({ text: 'تم تحديث ترتيب شجرة الأقسام', type: 'success' });
     } catch (error) {
-      setMessage({ text: error instanceof Error ? error.message : 'تعذر حفظ ترتيب التصنيفات', type: 'error' });
+      setMessage({ text: error instanceof Error ? error.message : 'تعذر حفظ ترتيب الأقسام', type: 'error' });
       await loadCategories();
     } finally {
       setReorderLoading(false);
@@ -308,7 +308,7 @@ export function CategoriesPanel({ request }: CategoriesPanelProps) {
   }
 
   const getParentName = (parentId: string | null) => {
-    if (!parentId) return 'بدون تصنيف أب';
+    if (!parentId) return 'بدون قسم أب';
     const parent = categories.find(c => c.id === parentId);
     return parent ? parent.name : parentId;
   };
@@ -325,7 +325,7 @@ export function CategoriesPanel({ request }: CategoriesPanelProps) {
             color="inherit"
             sx={{ fontWeight: 700 }}
           >
-            العودة للتصنيفات
+            العودة للأقسام
           </Button>
           {selectedId && (
             <Button 
@@ -334,7 +334,7 @@ export function CategoriesPanel({ request }: CategoriesPanelProps) {
               onClick={() => deleteCategory().catch(() => undefined)}
               disabled={actionLoading}
             >
-              حذف التصنيف
+              حذف القسم
             </Button>
           )}
         </Box>
@@ -347,7 +347,7 @@ export function CategoriesPanel({ request }: CategoriesPanelProps) {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
             <AccountTreeIcon color="primary" />
             <Typography variant="h6" fontWeight={800}>
-              {selectedId ? 'تعديل التصنيف' : 'تصنيف جديد'}
+              {selectedId ? 'تعديل القسم' : 'قسم جديد'}
             </Typography>
           </Box>
           <Divider sx={{ mb: 4 }} />
@@ -403,13 +403,13 @@ export function CategoriesPanel({ request }: CategoriesPanelProps) {
               <Box>
                 <TextField 
                   select
-                  label="التصنيف الأب (اختياري)" 
+                  label="القسم الأب (اختياري)" 
                   fullWidth 
                   value={form.parentId} 
                   onChange={(event) => setForm((prev) => ({ ...prev, parentId: event.target.value }))} 
-                  helperText="اختر تصنيفاً سابقاً لجعل هذا التصنيف فرعياً"
+                  helperText="اختر قسمًا سابقاً لجعل هذا القسم فرعياً"
                 >
-                  <MenuItem value="">بدون تصنيف أب</MenuItem>
+                  <MenuItem value="">بدون قسم أب</MenuItem>
                   {parentCategoryOptions.map((category) => (
                     <MenuItem key={category.id} value={category.id}>
                       {category.nameAr ?? category.name}
@@ -447,7 +447,7 @@ export function CategoriesPanel({ request }: CategoriesPanelProps) {
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
               <Box>
                 <TextField
-                  label="وصف صورة التصنيف (عربي)"
+                  label="وصف صورة القسم (عربي)"
                   fullWidth
                   value={form.imageAltAr}
                   onChange={(event) => setForm((prev) => ({ ...prev, imageAltAr: event.target.value }))}
@@ -467,14 +467,14 @@ export function CategoriesPanel({ request }: CategoriesPanelProps) {
 
             <FormControlLabel 
               control={<Checkbox checked={form.isActive} onChange={(event) => setForm((prev) => ({ ...prev, isActive: event.target.checked }))} />} 
-              label={<Typography fontWeight={600}>تفعيل التصنيف وظهوره في المتجر</Typography>} 
+              label={<Typography fontWeight={600}>تفعيل القسم وظهوره في المتجر</Typography>} 
             />
 
             <Box sx={{ bgcolor: 'background.default', p: 3, borderRadius: 3, border: '1px dashed', borderColor: 'divider' }}>
-              <Typography variant="subtitle2" fontWeight={700} mb={2}>صورة التصنيف</Typography>
+              <Typography variant="subtitle2" fontWeight={700} mb={2}>صورة القسم</Typography>
               {formImageUrl && (
                 <Box sx={{ mb: 2, position: 'relative', display: 'inline-block' }}>
-                  <Box component="img" src={formImageUrl} alt={form.imageAltAr || form.imageAltEn || 'صورة التصنيف'} sx={{ width: 160, height: 160, objectFit: 'cover', borderRadius: 2, border: '1px solid', borderColor: 'divider' }} />
+                  <Box component="img" src={formImageUrl} alt={form.imageAltAr || form.imageAltEn || 'صورة القسم'} sx={{ width: 160, height: 160, objectFit: 'cover', borderRadius: 2, border: '1px solid', borderColor: 'divider' }} />
                   <Button size="small" color="error" onClick={handleRemoveImage} sx={{ mt: 1 }}>إزالة الصورة</Button>
                 </Box>
               )}
@@ -487,10 +487,10 @@ export function CategoriesPanel({ request }: CategoriesPanelProps) {
             </Box>
 
             <Box sx={{ bgcolor: 'background.default', p: 3, borderRadius: 3, border: '1px dashed', borderColor: 'divider' }}>
-              <Typography variant="subtitle2" fontWeight={700} mb={2}>الصورة الخلفية للتصنيف</Typography>
+              <Typography variant="subtitle2" fontWeight={700} mb={2}>الصورة الخلفية للقسم</Typography>
               {formBackgroundImageUrl && (
                 <Box sx={{ mb: 2, position: 'relative', display: 'inline-block' }}>
-                  <Box component="img" src={formBackgroundImageUrl} alt="الصورة الخلفية للتصنيف" sx={{ width: 240, height: 120, objectFit: 'cover', borderRadius: 2, border: '1px solid', borderColor: 'divider' }} />
+                  <Box component="img" src={formBackgroundImageUrl} alt="الصورة الخلفية للقسم" sx={{ width: 240, height: 120, objectFit: 'cover', borderRadius: 2, border: '1px solid', borderColor: 'divider' }} />
                   <Button size="small" color="error" onClick={handleRemoveBackgroundImage} sx={{ mt: 1 }}>إزالة الصورة</Button>
                 </Box>
               )}
@@ -507,7 +507,7 @@ export function CategoriesPanel({ request }: CategoriesPanelProps) {
               <Stack spacing={3}>
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
                   <TextField
-                    label="عنوان صفحة التصنيف (عربي)"
+                    label="عنوان صفحة القسم (عربي)"
                     fullWidth
                     value={form.seoTitleAr}
                     onChange={(event) => setForm((prev) => ({ ...prev, seoTitleAr: event.target.value }))}
@@ -523,7 +523,7 @@ export function CategoriesPanel({ request }: CategoriesPanelProps) {
                 </Box>
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
                   <TextField
-                    label="وصف صفحة التصنيف (عربي)"
+                    label="وصف صفحة القسم (عربي)"
                     fullWidth
                     multiline
                     minRows={3}
@@ -552,13 +552,13 @@ export function CategoriesPanel({ request }: CategoriesPanelProps) {
                 disabled={actionLoading}
                 sx={{ px: 4, borderRadius: 2 }}
               >
-                {actionLoading ? 'جارِ الحفظ...' : selectedId ? 'حفظ التعديلات' : 'إنشاء التصنيف'}
+                {actionLoading ? 'جارِ الحفظ...' : selectedId ? 'حفظ التعديلات' : 'إنشاء القسم'}
               </Button>
             </Box>
           </Stack>
         </Paper>
         <FloatingActionButton
-          label={actionLoading ? 'جاري الحفظ...' : selectedId ? 'حفظ التصنيف' : 'إنشاء التصنيف'}
+          label={actionLoading ? 'جاري الحفظ...' : selectedId ? 'حفظ القسم' : 'إنشاء القسم'}
           icon={<AddIcon />}
           onClick={() => (selectedId ? updateCategory() : createCategory()).catch(() => undefined)}
           disabled={actionLoading}
@@ -572,7 +572,7 @@ export function CategoriesPanel({ request }: CategoriesPanelProps) {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 1, flexWrap: 'wrap', gap: 2 }}>
         <Box>
           <Typography variant="h4" fontWeight={800} gutterBottom>
-            التصنيفات
+            الأقسام
           </Typography>
           <Typography color="text.secondary">
             نظم منتجاتك في مجموعات وفئات لتسهيل تصفحها على عملائك.
@@ -594,7 +594,7 @@ export function CategoriesPanel({ request }: CategoriesPanelProps) {
             size="large"
             sx={{ borderRadius: 2 }}
           >
-            تصنيف جديد
+            قسم جديد
           </Button>
         </Stack>
       </Box>
@@ -610,12 +610,12 @@ export function CategoriesPanel({ request }: CategoriesPanelProps) {
           </Box>
         ) : categories.length === 0 ? (
           <Box sx={{ py: 6, textAlign: 'center' }}>
-            <Typography color="text.secondary">لا توجد تصنيفات مضافة.</Typography>
+            <Typography color="text.secondary">لا توجد أقسام مضافة.</Typography>
           </Box>
         ) : (
           <Stack spacing={1.2}>
             <Typography variant="body2" color="text.secondary">
-              اسحب التصنيف ثم أفلته فوق تصنيف آخر لإعادة الترتيب داخل نفس المستوى. ويمكنك إفلاته في منطقة الجذر لنقله كتصنيف رئيسي.
+              اسحب القسم ثم أفلته فوق قسم آخر لإعادة الترتيب داخل نفس المستوى. ويمكنك إفلاته في منطقة الجذر لنقله كقسم رئيسي.
             </Typography>
             <Box
               onDragOver={(event) => event.preventDefault()}
@@ -631,7 +631,7 @@ export function CategoriesPanel({ request }: CategoriesPanelProps) {
                 bgcolor: draggedCategoryId ? 'action.hover' : 'background.default',
               }}
             >
-              <Typography variant="body2" color="text.secondary">إفلات هنا للنقل إلى الجذر (بدون تصنيف أب)</Typography>
+              <Typography variant="body2" color="text.secondary">إفلات هنا للنقل إلى الجذر (بدون قسم أب)</Typography>
             </Box>
             {treeRows.map(({ category, depth }) => (
               <Box
@@ -712,14 +712,14 @@ export function CategoriesPanel({ request }: CategoriesPanelProps) {
             ))}
             {reorderLoading ? (
               <Typography variant="body2" color="text.secondary">
-                جاري حفظ ترتيب التصنيفات...
+                جاري حفظ ترتيب الأقسام...
               </Typography>
             ) : null}
           </Stack>
         )}
       </Paper>
       <FloatingActionButton
-        label="إنشاء تصنيف"
+        label="إنشاء قسم"
         icon={<AddIcon />}
         onClick={handleCreateNew}
         disabled={loading || actionLoading}
@@ -914,7 +914,7 @@ function buildCategoryPayload(form: {
 }, mediaAssetId: string | null, backgroundMediaAssetId: string | null, isUpdate: boolean) {
   const primaryArabicName = form.nameAr.trim() || form.name.trim();
   if (!primaryArabicName) {
-    throw new Error('الاسم العربي للتصنيف مطلوب');
+    throw new Error('الاسم العربي للقسم مطلوب');
   }
 
   const payload: {
@@ -1008,7 +1008,7 @@ function buildCategoryPayload(form: {
   return payload;
 }
 
-async function uploadMediaAsset(request: MerchantRequester, file: File): Promise<MediaAsset> {
+async function uploadMediaAsset(request: AdminRequester, file: File): Promise<MediaAsset> {
   const presigned = await request<PresignedMediaUpload>('/media/presign-upload', {
     method: 'POST',
     body: JSON.stringify({

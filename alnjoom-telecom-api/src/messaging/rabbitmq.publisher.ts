@@ -35,7 +35,7 @@ export class RabbitMqPublisher implements MessagePublisher, OnModuleDestroy {
     if (!channel) {
       throw new Error('RabbitMQ confirm channel is not initialized');
     }
-    const exchange = this.value('RABBITMQ_EXCHANGE', 'commerce.events');
+    const exchange = this.value('RABBITMQ_EXCHANGE', 'alnjoom-telecom.events');
     const timeoutMs = Number(this.value('RABBITMQ_CONFIRM_TIMEOUT_MS', '10000'));
     const content = Buffer.from(JSON.stringify(message.payload));
     const confirmation = new Promise<void>((resolve, reject) => {
@@ -66,7 +66,7 @@ export class RabbitMqPublisher implements MessagePublisher, OnModuleDestroy {
 
   private async ensureChannel(): Promise<void> {
     if (this.channel) return;
-    const exchange = this.value('RABBITMQ_EXCHANGE', 'commerce.events');
+    const exchange = this.value('RABBITMQ_EXCHANGE', 'alnjoom-telecom.events');
     const connection = await amqp.connect(
       this.value('RABBITMQ_URL', 'amqp://guest:guest@localhost:5672'),
     );

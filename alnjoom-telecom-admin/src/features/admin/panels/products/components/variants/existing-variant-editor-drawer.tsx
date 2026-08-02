@@ -20,7 +20,7 @@ import {
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import type { Attribute, ProductVariant, Warehouse } from '../../../../types';
-import type { MerchantRequester } from '../../../../merchant-dashboard.types';
+import type { AdminRequester } from '../../../../admin-dashboard.types';
 import { clearFieldErrors, isApiError, mapFieldErrors } from '../../../../../../lib/api-error';
 import type { ProductWarehouseAllocationRow } from './variant-types';
 import { validateWarehouseAllocationRows } from './variant-utils';
@@ -31,7 +31,7 @@ interface ExistingVariantEditorDrawerProps {
   variant: ProductVariant | null;
   attributes: Attribute[];
   warehouses: Warehouse[];
-  request: MerchantRequester;
+  request: AdminRequester;
   onClose: () => void;
   onSaved: () => Promise<void>;
   onDeleted: () => Promise<void>;
@@ -214,7 +214,7 @@ export function ExistingVariantEditorDrawer({
         }
       }
 
-      setMessage({ text: 'تم حفظ تعديلات المتغير بنجاح.', type: 'success' });
+      setMessage({ text: 'تم حفظ تعديلات خيار المنتج بنجاح.', type: 'success' });
       await onSaved();
       onClose();
     } catch (error) {
@@ -222,7 +222,7 @@ export function ExistingVariantEditorDrawer({
         setFieldErrors(mapVariantFieldErrors(error.fieldErrors));
       }
       setMessage({
-        text: error instanceof Error ? error.message : 'تعذر حفظ تعديلات المتغير',
+        text: error instanceof Error ? error.message : 'تعذر حفظ تعديلات خيار المنتج',
         type: 'error',
       });
     } finally {
@@ -232,16 +232,16 @@ export function ExistingVariantEditorDrawer({
 
   async function handleDelete(): Promise<void> {
     if (!variant) return;
-    if (!window.confirm(`هل أنت متأكد من حذف المتغير "${variant.title}"؟`)) return;
+    if (!window.confirm(`هل أنت متأكد من حذف خيار المنتج "${variant.title}"؟`)) return;
     setDeleting(true);
     try {
       await request(`/products/${productId}/variants/${variant.id}`, { method: 'DELETE' });
-      setMessage({ text: 'تم حذف المتغير بنجاح.', type: 'success' });
+      setMessage({ text: 'تم حذف خيار المنتج بنجاح.', type: 'success' });
       await onDeleted();
       onClose();
     } catch (error) {
       setMessage({
-        text: error instanceof Error ? error.message : 'تعذر حذف المتغير',
+        text: error instanceof Error ? error.message : 'تعذر حذف خيار المنتج',
         type: 'error',
       });
     } finally {
@@ -288,7 +288,7 @@ export function ExistingVariantEditorDrawer({
           <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
             <Box>
               <Typography variant="h5" fontWeight={900}>
-                تعديل المتغير
+                تعديل خيار المنتج
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {variant?.title ?? ''}
@@ -304,7 +304,7 @@ export function ExistingVariantEditorDrawer({
           <Stack spacing={2.5}>
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
               <TextField
-                label="اسم المتغير"
+                label="اسم خيار المنتج"
                 value={form.title}
                 error={Boolean(fieldErrors.title)}
                 helperText={fieldErrors.title}
@@ -387,7 +387,7 @@ export function ExistingVariantEditorDrawer({
                       onChange={(e) => setForm((prev) => ({ ...prev, isDefault: e.target.checked }))}
                     />
                   }
-                  label="المتغير الافتراضي"
+                  label="خيار المنتج الافتراضي"
                 />
               </Box>
             </Box>
@@ -435,7 +435,7 @@ export function ExistingVariantEditorDrawer({
               <>
                 <Divider />
                 <Typography variant="subtitle1" fontWeight={900}>
-                  خصائص المتغير
+                  مواصفات خيار المنتج
                 </Typography>
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
                   {relevantAttributes.map((attr) => (
@@ -480,7 +480,7 @@ export function ExistingVariantEditorDrawer({
                     setWarehouseExpanded((prev) => !prev);
                   }}
                 >
-                  {warehouseExpanded ? 'إخفاء توزيع المستودعات' : 'عرض توزيع المستودعات'}
+                  {warehouseExpanded ? 'إخفاء توزيع المخازن' : 'عرض توزيع المخازن'}
                 </Button>
                 <Collapse in={warehouseExpanded}>
                   {warehouseLoading ? (
@@ -493,7 +493,7 @@ export function ExistingVariantEditorDrawer({
                         <TableHead>
                           <TableRow>
                             <TableCell>تفعيل</TableCell>
-                            <TableCell>المستودع</TableCell>
+                            <TableCell>المخزن</TableCell>
                             <TableCell>الكمية</TableCell>
                             <TableCell>محجوز</TableCell>
                             <TableCell>حد التنبيه</TableCell>
@@ -580,7 +580,7 @@ export function ExistingVariantEditorDrawer({
               onClick={() => handleDelete().catch(() => undefined)}
               disabled={deleting || saving}
             >
-              {deleting ? 'جارٍ الحذف...' : 'حذف المتغير'}
+              {deleting ? 'جارٍ الحذف...' : 'حذف خيار المنتج'}
             </Button>
             <Stack direction="row" spacing={1.5}>
               <Button onClick={onClose} color="inherit">

@@ -1,10 +1,10 @@
 import { Alert, Box, Stack } from '@mui/material';
-import type { MerchantRequester } from '../merchant-dashboard.types';
+import type { AdminRequester } from '../admin-dashboard.types';
 import type { AnalyticsOperations } from '../types';
 import { AppPage, PageHeader, StatCard } from '../components/ui';
 import { AnalyticsFiltersBar, AnalyticsLoadingState, buildAnalyticsQuery, useAnalyticsData, useAnalyticsFilters } from './analytics-common';
 
-export function AnalyticsOperationsPanel({ request }: { request: MerchantRequester }) {
+export function AnalyticsOperationsPanel({ request }: { request: AdminRequester }) {
   const [filters, setFilters] = useAnalyticsFilters();
   const query = buildAnalyticsQuery(filters);
   const { data, loading, error, refresh } = useAnalyticsData<AnalyticsOperations>(

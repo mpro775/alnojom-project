@@ -1,4 +1,8 @@
 import Joi from 'joi';
+import {
+  LEGACY_ADMIN_BASE_URL_ENV,
+  LEGACY_WEAK_SECRET_VALUES,
+} from '../compatibility/legacy-branding-runtime';
 
 const WEAK_SECRET_VALUES = [
   'change-me',
@@ -7,11 +11,7 @@ const WEAK_SECRET_VALUES = [
   'change-me-customer-jwt-secret',
   'change-me-otp-secret',
   'change-me-webhook-secret',
-  'ecommerce_core-local-access-secret-change-me',
-  'ecommerce_core-local-customer-access-secret-change-me',
-  'ecommerce_core-local-owner-registration-otp-secret-change-me',
-  'ecommerce_core-local-token-hash-secret-change-me',
-  'ecommerce_core-local-webhook-secret',
+  ...LEGACY_WEAK_SECRET_VALUES,
 ];
 
 function productionSecret(min: number, developmentDefault: string): Joi.Schema {
@@ -31,19 +31,20 @@ export const envValidationSchema = Joi.object({
   HTTP_JSON_BODY_LIMIT: Joi.string().default('6mb'),
   DATABASE_URL: Joi.string()
     .uri({ scheme: ['postgres', 'postgresql'] })
-    .default('postgres://ecommerce_core:password@localhost:5432/ecommerce_core_store'),
+    .default('postgres://alnjoom:password@localhost:5432/alnjoom_telecom_store'),
   REDIS_URL: Joi.string()
     .uri({ scheme: ['redis'] })
     .default('redis://localhost:6379'),
   RABBITMQ_URL: Joi.string()
     .uri({ scheme: ['amqp', 'amqps'] })
     .default('amqp://guest:guest@localhost:5672'),
-  RABBITMQ_EXCHANGE: Joi.string().default('commerce.events'),
-  NOTIFICATIONS_MAIN_QUEUE: Joi.string().default('notifications.order-events'),
-  NOTIFICATIONS_DLQ_QUEUE: Joi.string().default('notifications.order-events.dlq'),
-  NOTIFICATIONS_RETRY_CREATED_QUEUE: Joi.string().default('notifications.order-created.retry'),
-  NOTIFICATIONS_RETRY_STATUS_QUEUE: Joi.string().default('notifications.order-status.retry'),
-  NOTIFICATIONS_RETRY_INVENTORY_QUEUE: Joi.string().default('notifications.inventory.retry'),
+  RABBITMQ_EXCHANGE: Joi.string().default('alnjoom-telecom.events'),
+  NOTIFICATIONS_MAIN_QUEUE: Joi.string().default('alnjoom-telecom.notifications'),
+  NOTIFICATIONS_DLQ_QUEUE: Joi.string().default('alnjoom-telecom.notifications.dlq'),
+  NOTIFICATIONS_RETRY_CREATED_QUEUE: Joi.string().default('alnjoom-telecom.notifications.retry.created'),
+  NOTIFICATIONS_RETRY_STATUS_QUEUE: Joi.string().default('alnjoom-telecom.notifications.retry.status'),
+  NOTIFICATIONS_RETRY_INVENTORY_QUEUE: Joi.string().default('alnjoom-telecom.notifications.retry.inventory'),
+  NOTIFICATIONS_RETRY_GENERIC_QUEUE: Joi.string().default('alnjoom-telecom.notifications.retry.generic'),
   NOTIFICATIONS_MAX_RETRIES: Joi.number().integer().min(0).max(20).default(3),
   NOTIFICATIONS_RETRY_DELAY_MS: Joi.number().integer().min(100).max(300_000).default(10_000),
   NOTIFICATIONS_RABBITMQ_CONNECT_MAX_ATTEMPTS: Joi.number().integer().min(1).max(120).default(20),
@@ -82,20 +83,20 @@ export const envValidationSchema = Joi.object({
       .min(32)
       .invalid(...WEAK_SECRET_VALUES)
       .required(),
-    otherwise: Joi.string().min(24).default('ecommerce_core-local-token-hash-secret-change-me'),
+    otherwise: Joi.string().min(24).default('alnjoom-local-token-hash-secret-change-me'),
   }),
-  JWT_ACCESS_SECRET: productionSecret(32, 'ecommerce_core-local-access-secret-change-me'),
+  JWT_ACCESS_SECRET: productionSecret(32, 'alnjoom-local-access-secret-change-me'),
   JWT_ACCESS_EXPIRES_IN: Joi.string().default('15m'),
   REFRESH_TOKEN_TTL_DAYS: Joi.number().integer().min(1).max(90).default(30),
   S3_ENDPOINT: Joi.string()
     .uri({ scheme: ['http', 'https'] })
     .default('http://localhost:9000'),
   S3_REGION: Joi.string().default('us-east-1'),
-  S3_BUCKET: Joi.string().default('commerce-media'),
+  S3_BUCKET: Joi.string().default('alnjoom-telecom-media'),
   S3_ACCESS_KEY: Joi.string().default('minio'),
   S3_SECRET_KEY: Joi.string().default('minio123'),
   S3_FORCE_PATH_STYLE: Joi.boolean().default(true),
-  S3_PUBLIC_BASE_URL: Joi.string().allow('').default('http://localhost:9000/commerce-media'),
+  S3_PUBLIC_BASE_URL: Joi.string().allow('').default('http://localhost:9000/alnjoom-telecom-media'),
   S3_PRESIGNED_PUT_TTL_SECONDS: Joi.number().integer().min(60).max(3600).default(900),
   S3_PRESIGNED_GET_TTL_SECONDS: Joi.number().integer().min(60).max(3600).default(600),
   ALLOWED_ORIGINS: Joi.string().allow('').default(''),
@@ -105,14 +106,14 @@ export const envValidationSchema = Joi.object({
     otherwise: Joi.boolean().default(false),
   }),
   SENTRY_DSN: Joi.string().allow('').default(''),
-  SENTRY_RELEASE: Joi.string().default('0.1.0'),
-  METRICS_PREFIX: Joi.string().default('ecommerce_core_'),
+  SENTRY_RELEASE: Joi.string().empty('').default('0.1.0'),
+  METRICS_PREFIX: Joi.string().default('alnjoom_'),
   CORS_CACHE_TTL_MS: Joi.number().integer().min(1000).max(600_000).default(60_000),
   CORS_CACHE_REFRESH_INTERVAL_MS: Joi.number().integer().min(1000).max(300_000).default(30_000),
   AUTH_MAX_ATTEMPTS: Joi.number().integer().min(3).max(20).default(5),
   AUTH_LOCKOUT_DURATION_MS: Joi.number().integer().min(60_000).max(3600_000).default(900_000),
   AUTH_WINDOW_MS: Joi.number().integer().min(60_000).max(3600_000).default(900_000),
-  AUTH_OTP_SECRET: productionSecret(32, 'ecommerce_core-local-owner-registration-otp-secret-change-me'),
+  AUTH_OTP_SECRET: productionSecret(32, 'alnjoom-local-owner-registration-otp-secret-change-me'),
   AUTH_OTP_TTL_MINUTES: Joi.number().integer().min(3).max(30).default(10),
   AUTH_OTP_MAX_VERIFY_ATTEMPTS: Joi.number().integer().min(3).max(10).default(5),
   AUTH_OTP_RESEND_COOLDOWN_SECONDS: Joi.number().integer().min(30).max(600).default(60),
@@ -120,7 +121,7 @@ export const envValidationSchema = Joi.object({
   EMAIL_DELIVERY_MODE: Joi.string().valid('log', 'resend', 'smtp').default('log'),
   EMAIL_FROM: Joi.string()
     .email({ tlds: { allow: false } })
-    .default('no-reply@ecommerce_core.store'),
+    .default('no-reply@alnjoom.invalid'),
   SMTP_HOST: Joi.when('EMAIL_DELIVERY_MODE', {
     is: 'smtp',
     then: Joi.string().trim().required(),
@@ -146,8 +147,8 @@ export const envValidationSchema = Joi.object({
     .uri({ scheme: ['http', 'https'] })
     .default('https://api.resend.com'),
   RESEND_API_KEY: Joi.string().allow('').default(''),
-  WEBHOOK_SECRET: productionSecret(32, 'ecommerce_core-local-webhook-secret'),
-  JWT_CUSTOMER_ACCESS_SECRET: productionSecret(32, 'ecommerce_core-local-customer-access-secret-change-me'),
+  WEBHOOK_SECRET: productionSecret(32, 'alnjoom-local-webhook-secret-change-me'),
+  JWT_CUSTOMER_ACCESS_SECRET: productionSecret(32, 'alnjoom-local-customer-access-secret-change-me'),
   JWT_CUSTOMER_ACCESS_EXPIRES_IN: Joi.string().default('15m'),
   CUSTOMER_REFRESH_TOKEN_TTL_DAYS: Joi.number().integer().min(1).max(90).default(30),
   CUSTOMER_PASSWORD_RESET_TTL_MINUTES: Joi.number().integer().min(1).max(1440).default(60),
@@ -155,7 +156,10 @@ export const envValidationSchema = Joi.object({
     .uri({ scheme: ['http', 'https'] })
     .default('http://localhost:3000'),
 
-  MERCHANT_ADMIN_BASE_URL: Joi.string()
+  ADMIN_BASE_URL: Joi.string()
+    .uri({ scheme: ['http', 'https'] })
+    .optional(),
+  [LEGACY_ADMIN_BASE_URL_ENV]: Joi.string()
     .uri({ scheme: ['http', 'https'] })
     .default('http://localhost:5173'),
   RESTOCK_CONVERSION_WINDOW_DAYS: Joi.number().integer().min(1).max(30).default(7),

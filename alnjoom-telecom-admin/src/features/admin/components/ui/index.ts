@@ -5,7 +5,7 @@ export { EmptyTableState, TableLoadingRow } from './table-state-rows';
 export { FilterBar } from './filter-bar';
 export { FloatingActionButton } from './floating-action-button';
 export { FormSection } from './form-section';
-export { EcommerceCoreLoader } from './ecommerce_core-loader';
+export { AlnjoomLoader } from './alnjoom-loader';
 export {
   EmptyState,
   GlassHero,

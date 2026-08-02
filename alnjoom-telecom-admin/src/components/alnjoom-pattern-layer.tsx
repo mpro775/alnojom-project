@@ -3,18 +3,18 @@ import { useTheme, type SxProps, type Theme } from '@mui/material/styles';
 import { useId } from 'react';
 import { ADMIN_TOKENS } from '../theme/tokens';
 
-type EcommerceCorePatternVariant = 'hero' | 'dashboard' | 'section' | 'card';
-type EcommerceCorePatternAnchor = 'start' | 'end' | 'center';
+type AlnjoomPatternVariant = 'hero' | 'dashboard' | 'section' | 'card';
+type AlnjoomPatternAnchor = 'start' | 'end' | 'center';
 
-interface EcommerceCorePatternLayerProps {
-  variant?: EcommerceCorePatternVariant;
+interface AlnjoomPatternLayerProps {
+  variant?: AlnjoomPatternVariant;
   opacity?: number;
-  anchor?: EcommerceCorePatternAnchor;
+  anchor?: AlnjoomPatternAnchor;
   sx?: SxProps<Theme>;
 }
 
 const variantSettings: Record<
-  EcommerceCorePatternVariant,
+  AlnjoomPatternVariant,
   { strokeWidth: number; nodeScale: number; showCards: boolean; viewBox: string }
 > = {
   hero: { strokeWidth: 2.6, nodeScale: 1, showCards: true, viewBox: '0 0 1000 620' },
@@ -34,7 +34,7 @@ const signalNodes: Array<[number, number, number]> = [
   [866, 558, 7],
 ];
 
-function resolveTransform(anchor: EcommerceCorePatternAnchor) {
+function resolveTransform(anchor: AlnjoomPatternAnchor) {
   if (anchor === 'end') {
     return 'scaleX(-1)';
   }
@@ -46,15 +46,15 @@ function resolveTransform(anchor: EcommerceCorePatternAnchor) {
   return 'none';
 }
 
-export function EcommerceCorePatternLayer({
+export function AlnjoomPatternLayer({
   variant = 'section',
   opacity = 1,
   anchor = 'start',
   sx,
-}: EcommerceCorePatternLayerProps) {
+}: AlnjoomPatternLayerProps) {
   const theme = useTheme();
   const rawId = useId().replace(/:/g, '');
-  const gradientId = `ecommerce_core-signal-${rawId}`;
+  const gradientId = `alnjoom-signal-${rawId}`;
   const settings = variantSettings[variant];
   const colors = ADMIN_TOKENS.pattern[theme.palette.mode];
   const isCard = variant === 'card';

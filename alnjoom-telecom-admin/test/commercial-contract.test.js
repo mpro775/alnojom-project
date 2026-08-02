@@ -1,12 +1,12 @@
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
-const { describe, it } = require('node:test');
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { describe, it } from 'node:test';
 
-const root = path.join(__dirname, '..');
+const root = path.join(import.meta.dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
-const orders = read('src/features/merchant/panels/orders/orders-panel.tsx');
-const payments = read('src/features/merchant/panels/payments/payments-panel.tsx');
+const orders = read('src/features/admin/panels/orders/orders-panel.tsx');
+const payments = read('src/features/admin/panels/payments/payments-panel.tsx');
 const format = read('src/lib/commercial-format.ts');
 const generated = read('src/api/generated/openapi.ts');
 

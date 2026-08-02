@@ -50,8 +50,8 @@ export function VariantWarehouseDrawer({
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ fontWeight: 900 }}>
         {isBulk
-          ? `توزيع المستودعات (${bulkCount} متغير)`
-          : `مستودعات المتغير: ${draftTitle}`}
+          ? `توزيع المخازن (${bulkCount} خيار منتج)`
+          : `مخازن خيار المنتج: ${draftTitle}`}
       </DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
@@ -60,7 +60,7 @@ export function VariantWarehouseDrawer({
               <TableHead>
                 <TableRow>
                   <TableCell>تفعيل</TableCell>
-                  <TableCell>المستودع</TableCell>
+                  <TableCell>المخزن</TableCell>
                   <TableCell>الكمية</TableCell>
                   <TableCell>محجوز</TableCell>
                   <TableCell>حد التنبيه</TableCell>

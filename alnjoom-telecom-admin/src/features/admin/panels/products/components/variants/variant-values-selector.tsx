@@ -19,7 +19,7 @@ export function VariantValuesSelector({
   if (selectedAttributes.length === 0) {
     return (
       <Typography variant="body2" color="text.secondary">
-        اختر الخصائص أولاً لتحديد القيم.
+        اختر المواصفات أولاً لتحديد القيم.
       </Typography>
     );
   }

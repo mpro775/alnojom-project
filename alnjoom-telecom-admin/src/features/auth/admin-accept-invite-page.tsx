@@ -16,12 +16,12 @@ import {
 } from '@mui/material';
 import { requestJson } from '../../lib/http';
 import { ADMIN_TOKENS } from '../../theme/tokens';
-import { EcommerceCoreLoader } from '../merchant/components/ui';
-import { readStoredApiBaseUrl } from '../merchant/session-storage';
-import type { AuthResult, InviteValidation, MerchantSession, UserProfile } from '../merchant/types';
+import { AlnjoomLoader } from '../admin/components/ui';
+import { readStoredApiBaseUrl } from '../admin/session-storage';
+import type { AuthResult, InviteValidation, AdminSession, UserProfile } from '../admin/types';
 
-interface MerchantAcceptInvitePageProps {
-  onAccepted: (session: MerchantSession) => void;
+interface AdminAcceptInvitePageProps {
+  onAccepted: (session: AdminSession) => void;
   onBackHome: () => void;
   onSignIn: () => void;
 }
@@ -33,11 +33,11 @@ type InviteState =
   | { status: 'ready'; invite: InviteValidation }
   | { status: 'error'; message: string };
 
-export function MerchantAcceptInvitePage({
+export function AdminAcceptInvitePage({
   onAccepted,
   onBackHome,
   onSignIn,
-}: MerchantAcceptInvitePageProps) {
+}: AdminAcceptInvitePageProps) {
   const theme = useTheme();
   const token = useMemo(() => new URLSearchParams(window.location.search).get('token')?.trim() ?? '', []);
   const [inviteState, setInviteState] = useState<InviteState>({ status: 'loading' });
@@ -205,7 +205,7 @@ export function MerchantAcceptInvitePage({
           <Stack spacing={2.5}>
             <Stack spacing={0.8}>
               <Chip
-                label="Ecommerce Core Stores"
+                label="Alnjoom Telecom Store"
                 color="primary"
                 variant="outlined"
                 sx={{
@@ -303,7 +303,7 @@ function renderInviteState(
   if (inviteState.status === 'loading') {
     return (
       <Stack direction="row" spacing={1.5} alignItems="center">
-        <EcommerceCoreLoader size="sm" label="" compact />
+        <AlnjoomLoader size="sm" label="" compact />
         <Typography color="text.secondary">Checking invitation...</Typography>
       </Stack>
     );

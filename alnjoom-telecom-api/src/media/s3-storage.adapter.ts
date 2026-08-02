@@ -30,7 +30,7 @@ export class S3StorageAdapter implements StorageAdapter {
     const accessKeyId = this.configService.get<string>('S3_ACCESS_KEY', '').trim();
     const secretAccessKey = this.configService.get<string>('S3_SECRET_KEY', '').trim();
 
-    this.bucketName = this.configService.get<string>('S3_BUCKET', 'commerce-media').trim();
+    this.bucketName = this.configService.get<string>('S3_BUCKET', 'alnjoom-telecom-media').trim();
     this.uploadUrlTtlSeconds = this.configService.get<number>('S3_PRESIGNED_PUT_TTL_SECONDS', 900);
     this.downloadUrlTtlSeconds = this.configService.get<number>(
       'S3_PRESIGNED_GET_TTL_SECONDS',

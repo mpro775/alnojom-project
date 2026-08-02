@@ -22,13 +22,13 @@ import {
 } from '@mui/material';
 import { requestJson } from '../../lib/http';
 import { readStoredApiBaseUrl } from './session-storage';
-import type { AuthResult, MerchantSession } from './types';
+import type { AuthResult, AdminSession } from './types';
 
-interface MerchantLoginProps {
-  onLoggedIn: (session: MerchantSession) => void;
+interface AdminLoginProps {
+  onLoggedIn: (session: AdminSession) => void;
 }
 
-export function MerchantLogin({ onLoggedIn }: MerchantLoginProps) {
+export function AdminLogin({ onLoggedIn }: AdminLoginProps) {
   const theme = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

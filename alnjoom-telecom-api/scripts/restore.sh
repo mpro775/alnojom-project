@@ -36,9 +36,9 @@ restore_database() {
     
     confirm_restore "DATABASE"
     
-    local db_container="${DB_CONTAINER:-ecommerce_core-postgres}"
-    local db_user="${POSTGRES_USER:-ecommerce_core}"
-    local db_name="${POSTGRES_DB:-ecommerce_core_store}"
+    local db_container="${DB_CONTAINER:-alnjoom-telecom-postgres}"
+    local db_user="${POSTGRES_USER:-alnjoom}"
+    local db_name="${POSTGRES_DB:-alnjoom_telecom_store}"
     
     log "Starting database restore from: $backup_file"
     
@@ -80,7 +80,7 @@ restore_redis() {
     
     confirm_restore "REDIS"
     
-    local redis_container="${REDIS_CONTAINER:-ecommerce_core-redis}"
+    local redis_container="${REDIS_CONTAINER:-alnjoom-telecom-redis}"
     
     log "Starting Redis restore from: $backup_file"
     
@@ -108,7 +108,7 @@ restore_storage() {
     
     confirm_restore "STORAGE"
     
-    local minio_container="${MINIO_CONTAINER:-ecommerce_core-minio}"
+    local minio_container="${MINIO_CONTAINER:-alnjoom-telecom-minio}"
     
     log "Starting storage restore from: $backup_file"
     
@@ -133,9 +133,9 @@ validate_restore() {
     
     case "$component" in
         database)
-            local db_container="${DB_CONTAINER:-ecommerce_core-postgres}"
-            local db_user="${POSTGRES_USER:-ecommerce_core}"
-            local db_name="${POSTGRES_DB:-ecommerce_core_store}"
+            local db_container="${DB_CONTAINER:-alnjoom-telecom-postgres}"
+            local db_user="${POSTGRES_USER:-alnjoom}"
+            local db_name="${POSTGRES_DB:-alnjoom_telecom_store}"
             
             if docker ps --format '{{.Names}}' | grep -q "^${db_container}$"; then
                 local table_count=$(docker exec "$db_container" psql -U "$db_user" -d "$db_name" -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';" | tr -d ' ')
@@ -146,7 +146,7 @@ validate_restore() {
             fi
             ;;
         redis)
-            local redis_container="${REDIS_CONTAINER:-ecommerce_core-redis}"
+            local redis_container="${REDIS_CONTAINER:-alnjoom-telecom-redis}"
             if docker ps --format '{{.Names}}' | grep -q "^${redis_container}$"; then
                 docker exec "$redis_container" redis-cli ping
             fi
@@ -172,7 +172,8 @@ list_backups() {
     printf "%-40s %-15s %-15s\n" "FILE" "SIZE" "DATE"
     echo "------------------------------------------------------------------------"
     
-    for file in "$backup_dir"/ecommerce_core_store_*; do
+    # Compatibility window: list historical backup names as well as canonical names.
+    for file in "$backup_dir"/alnjoom_telecom_store_* "$backup_dir"/ecommerce_core_store_*; do
         if [[ -f "$file" ]]; then
             local size=$(du -h "$file" | cut -f1)
             local date=$(stat -c %y "$file" 2>/dev/null | cut -d' ' -f1 || stat -f "%Sm" "$file" 2>/dev/null)
@@ -194,7 +195,7 @@ usage() {
     echo ""
     echo "Examples:"
     echo "  $0 list"
-    echo "  $0 database ./backups/ecommerce_core_store_20240115_120000_database.sql.gz"
+    echo "  $0 database ./backups/alnjoom_telecom_store_20240115_120000_database.sql.gz"
     echo "  $0 validate database"
 }
 

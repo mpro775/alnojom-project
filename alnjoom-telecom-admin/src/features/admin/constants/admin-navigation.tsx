@@ -10,11 +10,11 @@ import {
   ShoppingCartIcon,
 } from '../../../components/icons';
 import { ADMIN_TOKENS } from '../../../theme/tokens';
-import type { MerchantNavItem, MerchantTabKey } from '../merchant-dashboard.types';
+import type { AdminNavItem, AdminTabKey } from '../admin-dashboard.types';
 
-export const MERCHANT_DRAWER_WIDTH = ADMIN_TOKENS.layout.sidebarWidth;
+export const ADMIN_DRAWER_WIDTH = ADMIN_TOKENS.layout.sidebarWidth;
 
-export const MERCHANT_NAV_ITEMS: MerchantNavItem[] = [
+export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { key: 'overview', label: 'الرئيسية', icon: <DashboardIcon /> },
   {
     key: 'group_products_inventory',
@@ -22,12 +22,12 @@ export const MERCHANT_NAV_ITEMS: MerchantNavItem[] = [
     icon: <InventoryIcon />,
     children: [
       { key: 'products', label: 'المنتجات', icon: <InventoryIcon /> },
-      { key: 'categories', label: 'التصنيفات' },
+      { key: 'categories', label: 'الأقسام' },
       { key: 'brands', label: 'العلامات التجارية' },
-      { key: 'attributes', label: 'الخصائص' },
-      { key: 'filters', label: 'الفلاتر' },
+      { key: 'attributes', label: 'المواصفات' },
+      { key: 'filters', label: 'فلاتر المواصفات' },
       { key: 'inventory', label: 'المخزون' },
-      { key: 'warehouses', label: 'المستودعات' },
+      { key: 'warehouses', label: 'المخازن' },
       { key: 'restockAlerts', label: 'تنبيهات التوفر' },
     ],
   },
@@ -93,8 +93,8 @@ export const MERCHANT_NAV_ITEMS: MerchantNavItem[] = [
     label: 'الإعدادات',
     icon: <SettingsIcon />,
     children: [
-      { key: 'store', label: 'إعدادات المتجر', icon: <SettingsIcon /> },
-      { key: 'payments', label: 'المدفوعات' },
+      { key: 'store', label: 'إعدادات نجوم تليكوم', icon: <SettingsIcon /> },
+      { key: 'payments', label: 'المدفوعات وطرق الدفع' },
       { key: 'shipping', label: 'التوصيل والاستلام' },
       { key: 'staff', label: 'فريق العمل' },
       { key: 'webhooks', label: 'الربط المتقدم API' },
@@ -102,24 +102,24 @@ export const MERCHANT_NAV_ITEMS: MerchantNavItem[] = [
   },
 ];
 
-export const MERCHANT_PRIMARY_MOBILE_TABS: MerchantTabKey[] = [
+export const ADMIN_PRIMARY_MOBILE_TABS: AdminTabKey[] = [
   'overview',
   'orders',
   'products',
 ];
 
-const MERCHANT_TAB_KEYS = new Set<MerchantTabKey>(
-  MERCHANT_NAV_ITEMS.flatMap((group) => {
+const ADMIN_TAB_KEYS = new Set<AdminTabKey>(
+  ADMIN_NAV_ITEMS.flatMap((group) => {
     if (group.children?.length) {
-      return group.children.map((child) => child.key as MerchantTabKey);
+      return group.children.map((child) => child.key as AdminTabKey);
     }
 
     return typeof group.key === 'string' && group.key.startsWith('group_')
       ? []
-      : [group.key as MerchantTabKey];
+      : [group.key as AdminTabKey];
   }),
 );
 
-export function isMerchantTabKey(value: string): value is MerchantTabKey {
-  return MERCHANT_TAB_KEYS.has(value as MerchantTabKey);
+export function isAdminTabKey(value: string): value is AdminTabKey {
+  return ADMIN_TAB_KEYS.has(value as AdminTabKey);
 }

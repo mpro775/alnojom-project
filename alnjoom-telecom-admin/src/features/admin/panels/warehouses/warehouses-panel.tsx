@@ -21,7 +21,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import type { MerchantRequester } from '../../merchant-dashboard.types';
+import type { AdminRequester } from '../../admin-dashboard.types';
 import { AppPage, DataTableWrapper, FloatingActionButton, PageHeader, SectionCard } from '../../components/ui';
 import type {
   Product,
@@ -33,7 +33,7 @@ import type {
 import { MAP_TILE_ATTRIBUTION, MAP_TILE_SUBDOMAINS, MAP_TILE_URL } from '../../../../lib/map-config';
 
 interface WarehousesPanelProps {
-  request: MerchantRequester;
+  request: AdminRequester;
 }
 
 interface WarehouseFormState {
@@ -217,7 +217,7 @@ export function WarehousesPanel({ request }: WarehousesPanelProps) {
       setProducts(productData?.items ?? []);
     } catch (error) {
       setMessage({
-        text: error instanceof Error ? error.message : 'تعذر تحميل بيانات المستودعات',
+        text: error instanceof Error ? error.message : 'تعذر تحميل بيانات المخازن',
         type: 'error',
       });
     } finally {
@@ -245,7 +245,7 @@ export function WarehousesPanel({ request }: WarehousesPanelProps) {
       setSelectedVariantId(firstVariantId);
     } catch (error) {
       setMessage({
-        text: error instanceof Error ? error.message : 'تعذر تحميل بيانات ربط المنتج بالمستودعات',
+        text: error instanceof Error ? error.message : 'تعذر تحميل بيانات ربط المنتج بالمخازن',
         type: 'error',
       });
     } finally {
@@ -266,7 +266,7 @@ export function WarehousesPanel({ request }: WarehousesPanelProps) {
       setVariantAllocationRows(buildVariantAllocationRows(warehouses, safeRows));
     } catch (error) {
       setMessage({
-        text: error instanceof Error ? error.message : 'تعذر تحميل توزيعات المتغير',
+        text: error instanceof Error ? error.message : 'تعذر تحميل توزيعات خيار المنتج',
         type: 'error',
       });
     } finally {
@@ -337,13 +337,13 @@ export function WarehousesPanel({ request }: WarehousesPanelProps) {
           method: 'PUT',
           body: JSON.stringify(payload),
         });
-        setMessage({ text: 'تم تحديث بيانات المستودع بنجاح.', type: 'success' });
+        setMessage({ text: 'تم تحديث بيانات المخزن بنجاح.', type: 'success' });
       } else {
         await request('/warehouses', {
           method: 'POST',
           body: JSON.stringify(payload),
         });
-        setMessage({ text: 'تم إنشاء المستودع بنجاح.', type: 'success' });
+        setMessage({ text: 'تم إنشاء المخزن بنجاح.', type: 'success' });
       }
 
       setWarehouseForm(createWarehouseFormDefault());
@@ -354,7 +354,7 @@ export function WarehousesPanel({ request }: WarehousesPanelProps) {
         await loadSelectedProductContext(selectedProductId);
       }
     } catch (error) {
-      setMessage({ text: error instanceof Error ? error.message : 'تعذر حفظ بيانات المستودع', type: 'error' });
+      setMessage({ text: error instanceof Error ? error.message : 'تعذر حفظ بيانات المخزن', type: 'error' });
     } finally {
       setActionLoading(false);
     }
@@ -396,13 +396,13 @@ export function WarehousesPanel({ request }: WarehousesPanelProps) {
     setMessage({ text: '', type: 'info' });
     try {
       await request(`/warehouses/${warehouseId}/default`, { method: 'POST' });
-      setMessage({ text: 'تم تعيين المستودع الافتراضي بنجاح.', type: 'success' });
+      setMessage({ text: 'تم تعيين المخزن الافتراضي بنجاح.', type: 'success' });
       await loadInitialData();
       if (selectedProductId) {
         await loadSelectedProductContext(selectedProductId);
       }
     } catch (error) {
-      setMessage({ text: error instanceof Error ? error.message : 'تعذر تعيين المستودع الافتراضي', type: 'error' });
+      setMessage({ text: error instanceof Error ? error.message : 'تعذر تعيين المخزن الافتراضي', type: 'error' });
     } finally {
       setActionLoading(false);
     }
@@ -416,7 +416,7 @@ export function WarehousesPanel({ request }: WarehousesPanelProps) {
 
     if ((selectedProduct?.variants?.length ?? 0) > 0) {
       setMessage({
-        text: 'هذا المنتج يحتوي على متغيرات، يرجى إدارة الربط من قسم توزيعات المتغيرات.',
+        text: 'هذا المنتج يحتوي على خيارات منتج، يرجى إدارة الربط من قسم توزيعات خيارات المنتج.',
         type: 'error',
       });
       return;
@@ -432,7 +432,7 @@ export function WarehousesPanel({ request }: WarehousesPanelProps) {
       const safeRows = rows ?? [];
       setProductLinks(safeRows);
       setSelectedProductWarehouseIds(safeRows.map((row) => row.warehouseId));
-      setMessage({ text: 'تم حفظ ربط المنتج بالمستودعات بنجاح.', type: 'success' });
+      setMessage({ text: 'تم حفظ ربط المنتج بالمخازن بنجاح.', type: 'success' });
     } catch (error) {
       setMessage({ text: error instanceof Error ? error.message : 'تعذر حفظ ربط المنتج', type: 'error' });
     } finally {
@@ -442,7 +442,7 @@ export function WarehousesPanel({ request }: WarehousesPanelProps) {
 
   async function saveVariantAllocations(): Promise<void> {
     if (!selectedVariantId) {
-      setMessage({ text: 'اختر متغيراً أولاً.', type: 'error' });
+      setMessage({ text: 'اختر خيار منتج أولاً.', type: 'error' });
       return;
     }
 
@@ -504,12 +504,12 @@ export function WarehousesPanel({ request }: WarehousesPanelProps) {
       const safeRows = rows ?? [];
       setVariantAllocations(safeRows);
       setVariantAllocationRows(buildVariantAllocationRows(warehouses, safeRows));
-      setMessage({ text: 'تم حفظ توزيع المخزون على المستودعات بنجاح.', type: 'success' });
+      setMessage({ text: 'تم حفظ توزيع المخزون على المخازن بنجاح.', type: 'success' });
       if (selectedProductId) {
         await loadSelectedProductContext(selectedProductId);
       }
     } catch (error) {
-      setMessage({ text: error instanceof Error ? error.message : 'تعذر حفظ توزيعات المتغير', type: 'error' });
+      setMessage({ text: error instanceof Error ? error.message : 'تعذر حفظ توزيعات خيار المنتج', type: 'error' });
     } finally {
       setActionLoading(false);
     }
@@ -548,17 +548,17 @@ export function WarehousesPanel({ request }: WarehousesPanelProps) {
   return (
     <AppPage>
       <PageHeader
-        title="المستودعات وربط المنتجات"
-        description="إدارة المستودعات ثنائية اللغة وربط المنتجات بدون متغيرات، وتوزيع مخزون المتغيرات لكل مستودع بإحداثيات دقيقة."
+        title="المخازن وربط المنتجات"
+        description="إدارة المخازن ثنائية اللغة وربط المنتجات بدون خيارات منتج، وتوزيع مخزون خيارات المنتج لكل مخزن بإحداثيات دقيقة."
         actions={
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
             {viewMode === 'detail' ? (
               <Button startIcon={<ArrowForwardIcon />} variant="outlined" onClick={() => setViewMode('list')}>
-                العودة للمستودعات
+                العودة للمخازن
               </Button>
             ) : (
               <Button startIcon={<AddIcon />} variant="contained" onClick={startCreateWarehouse}>
-                إضافة مستودع
+                إضافة مخزن
               </Button>
             )}
             <Button variant="outlined" onClick={() => loadInitialData().catch(() => undefined)} disabled={loading}>
@@ -580,12 +580,12 @@ export function WarehousesPanel({ request }: WarehousesPanelProps) {
           <SectionCard>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
               <PlaceIcon color="primary" />
-              <Typography variant="h6" fontWeight={800}>إدارة بيانات المستودع</Typography>
+              <Typography variant="h6" fontWeight={800}>إدارة بيانات المخزن</Typography>
             </Box>
 
             <Stack spacing={2.5}>
               <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' }, gap: 2 }}>
-                <TextField size="small" label="اسم المستودع (عربي)" value={warehouseForm.nameAr} onChange={(event) => setWarehouseForm({ ...warehouseForm, nameAr: event.target.value })} />
+                <TextField size="small" label="اسم المخزن (عربي)" value={warehouseForm.nameAr} onChange={(event) => setWarehouseForm({ ...warehouseForm, nameAr: event.target.value })} />
                 <TextField size="small" label="Warehouse Name (English)" value={warehouseForm.nameEn} onChange={(event) => setWarehouseForm({ ...warehouseForm, nameEn: event.target.value })} />
                 <TextField size="small" label="الكود (CODE)" value={warehouseForm.code} onChange={(event) => setWarehouseForm({ ...warehouseForm, code: event.target.value.toUpperCase() })} />
               </Box>
@@ -637,13 +637,13 @@ export function WarehousesPanel({ request }: WarehousesPanelProps) {
               </Box>
 
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                <FormControlLabel control={<Checkbox checked={warehouseForm.isActive} onChange={(event) => setWarehouseForm({ ...warehouseForm, isActive: event.target.checked })} />} label="مستودع نشط" />
-                <FormControlLabel control={<Checkbox checked={warehouseForm.isDefault} onChange={(event) => setWarehouseForm({ ...warehouseForm, isDefault: event.target.checked })} />} label="تعيين كمستودع افتراضي" />
+                <FormControlLabel control={<Checkbox checked={warehouseForm.isActive} onChange={(event) => setWarehouseForm({ ...warehouseForm, isActive: event.target.checked })} />} label="مخزن نشط" />
+                <FormControlLabel control={<Checkbox checked={warehouseForm.isDefault} onChange={(event) => setWarehouseForm({ ...warehouseForm, isDefault: event.target.checked })} />} label="تعيين كمخزن افتراضي" />
               </Stack>
 
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
                 <Button variant="contained" onClick={() => saveWarehouse().catch(() => undefined)} disabled={actionLoading}>
-                  {editingWarehouseId ? 'حفظ تحديثات المستودع' : 'إضافة مستودع جديد'}
+                  {editingWarehouseId ? 'حفظ تحديثات المخزن' : 'إضافة مخزن جديد'}
                 </Button>
                 {editingWarehouseId ? (
                   <Button
@@ -666,7 +666,7 @@ export function WarehousesPanel({ request }: WarehousesPanelProps) {
           <DataTableWrapper>
             <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 1 }}>
               <Inventory2Icon color="action" />
-              <Typography variant="subtitle1" fontWeight={800}>قائمة المستودعات ({warehouses.length})</Typography>
+              <Typography variant="subtitle1" fontWeight={800}>قائمة المخازن ({warehouses.length})</Typography>
             </Box>
             <TableContainer>
               <Table size="small">
@@ -684,7 +684,7 @@ export function WarehousesPanel({ request }: WarehousesPanelProps) {
                   {warehouses.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
-                        <Typography color="text.secondary">لا توجد مستودعات بعد.</Typography>
+                        <Typography color="text.secondary">لا توجد مخازن بعد.</Typography>
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -729,7 +729,7 @@ export function WarehousesPanel({ request }: WarehousesPanelProps) {
           <SectionCard>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
               <LinkIcon color="primary" />
-              <Typography variant="h6" fontWeight={800}>ربط المنتجات بالمستودعات</Typography>
+              <Typography variant="h6" fontWeight={800}>ربط المنتجات بالمخازن</Typography>
             </Box>
 
             <Stack spacing={2.5}>
@@ -751,8 +751,8 @@ export function WarehousesPanel({ request }: WarehousesPanelProps) {
               {selectedProduct ? (
                 <Alert severity={(selectedProduct.variants?.length ?? 0) > 0 ? 'info' : 'success'}>
                   {(selectedProduct.variants?.length ?? 0) > 0
-                    ? 'المنتج يحتوي على متغيرات؛ إدارة الربط ستكون على مستوى المتغيرات.'
-                    : 'هذا المنتج بدون متغيرات، يمكن ربطه بالمستودعات مباشرة.'}
+                    ? 'المنتج يحتوي على خيارات منتج؛ إدارة الربط ستكون على مستوى خيارات المنتج.'
+                    : 'هذا المنتج بدون خيارات منتج، يمكن ربطه بالمخازن مباشرة.'}
                 </Alert>
               ) : null}
 
@@ -790,19 +790,19 @@ export function WarehousesPanel({ request }: WarehousesPanelProps) {
           <SectionCard>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
               <TuneIcon color="primary" />
-              <Typography variant="h6" fontWeight={800}>توزيع مخزون المتغيرات على المستودعات</Typography>
+              <Typography variant="h6" fontWeight={800}>توزيع مخزون خيارات المنتج على المخازن</Typography>
             </Box>
 
             <Stack spacing={2.5}>
               <TextField
                 size="small"
                 select
-                label="اختر متغيراً"
+                label="اختر خيار منتج"
                 value={selectedVariantId}
                 onChange={(event) => setSelectedVariantId(event.target.value)}
                 disabled={variantOptions.length === 0}
               >
-                <MenuItem value="">اختر متغير</MenuItem>
+                <MenuItem value="">اختر خيار منتج</MenuItem>
                 {variantOptions.map((variant) => (
                   <MenuItem key={variant.id} value={variant.id}>
                     {variant.titleAr ?? variant.title} - {variant.sku}
@@ -815,7 +815,7 @@ export function WarehousesPanel({ request }: WarehousesPanelProps) {
                   إجمالي الكمية الموزعة: {selectedVariantAllocationSummary.totalQuantity} - المحجوز: {selectedVariantAllocationSummary.totalReserved}
                 </Alert>
               ) : (
-                <Alert severity="warning">اختر منتجاً ثم متغيراً لتعديل التوزيع.</Alert>
+                <Alert severity="warning">اختر منتجاً ثم خيار منتج لتعديل التوزيع.</Alert>
               )}
 
               {selectedVariantId ? (
@@ -825,7 +825,7 @@ export function WarehousesPanel({ request }: WarehousesPanelProps) {
                       <TableHead>
                         <TableRow>
                           <TableCell sx={{ fontWeight: 700 }}>تفعيل</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }}>المستودع</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>المخزن</TableCell>
                           <TableCell sx={{ fontWeight: 700 }}>الكمية</TableCell>
                           <TableCell sx={{ fontWeight: 700 }}>محجوز</TableCell>
                           <TableCell sx={{ fontWeight: 700 }}>حد التنبيه</TableCell>
@@ -873,7 +873,7 @@ export function WarehousesPanel({ request }: WarehousesPanelProps) {
                 onClick={() => saveVariantAllocations().catch(() => undefined)}
                 disabled={actionLoading || !selectedVariantId}
               >
-                حفظ توزيع المتغير
+                حفظ توزيع خيار المنتج
               </Button>
             </Stack>
           </SectionCard>
@@ -882,7 +882,7 @@ export function WarehousesPanel({ request }: WarehousesPanelProps) {
         </Stack>
       )}
       <FloatingActionButton
-        label={viewMode === 'detail' ? (actionLoading ? 'جاري الحفظ...' : 'حفظ المستودع') : 'إضافة مستودع'}
+        label={viewMode === 'detail' ? (actionLoading ? 'جاري الحفظ...' : 'حفظ المخزن') : 'إضافة مخزن'}
         icon={<AddIcon />}
         onClick={() => {
           if (viewMode === 'detail') {

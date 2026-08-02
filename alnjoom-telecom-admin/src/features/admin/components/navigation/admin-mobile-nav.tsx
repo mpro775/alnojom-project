@@ -2,21 +2,21 @@ import { MoreHorizIcon } from '../../../../components/icons';
 import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { ADMIN_TOKENS } from '../../../../theme/tokens';
-import type { MerchantNavItem, MerchantTabKey } from '../../merchant-dashboard.types';
+import type { AdminNavItem, AdminTabKey } from '../../admin-dashboard.types';
 
-interface MerchantMobileNavProps {
-  primaryItems: MerchantNavItem[];
-  activeTab: MerchantTabKey;
-  onSelectTab: (tab: MerchantTabKey) => void;
+interface AdminMobileNavProps {
+  primaryItems: AdminNavItem[];
+  activeTab: AdminTabKey;
+  onSelectTab: (tab: AdminTabKey) => void;
   onOpenMore: () => void;
 }
 
-export function MerchantMobileNav({
+export function AdminMobileNav({
   primaryItems,
   activeTab,
   onSelectTab,
   onOpenMore,
-}: MerchantMobileNavProps) {
+}: AdminMobileNavProps) {
   const isPrimaryTab = primaryItems.some((item) => item.key === activeTab);
   const value = isPrimaryTab ? activeTab : 'none';
 
@@ -64,7 +64,7 @@ export function MerchantMobileNav({
             },
           },
         }}
-        onChange={(_, nextValue: MerchantTabKey | 'more') => {
+        onChange={(_, nextValue: AdminTabKey | 'more') => {
           if (nextValue === 'more') {
             onOpenMore();
             return;

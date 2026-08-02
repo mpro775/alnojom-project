@@ -1,7 +1,7 @@
 import { Alert, Box } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import type { ReactNode } from 'react';
-import { EcommerceCorePatternLayer } from '../../../../components/ecommerce_core-pattern-layer';
+import { AlnjoomPatternLayer } from '../../../../components/alnjoom-pattern-layer';
 import { ADMIN_TOKENS } from '../../../../theme/tokens';
 
 const TOP_BAR_HEIGHT = {
@@ -9,7 +9,7 @@ const TOP_BAR_HEIGHT = {
   md: 68,
 };
 
-interface MerchantDashboardLayoutProps {
+interface AdminDashboardLayoutProps {
   bannerMessage: string;
   sidebar: ReactNode;
   topBar: ReactNode;
@@ -17,13 +17,13 @@ interface MerchantDashboardLayoutProps {
   children: ReactNode;
 }
 
-export function MerchantDashboardLayout({
+export function AdminDashboardLayout({
   bannerMessage,
   sidebar,
   topBar,
   mobileNavigation,
   children,
-}: MerchantDashboardLayoutProps) {
+}: AdminDashboardLayoutProps) {
   const theme = useTheme();
 
   return (
@@ -43,7 +43,7 @@ export function MerchantDashboardLayout({
             : `linear-gradient(135deg, ${alpha(theme.palette.secondary.main, 0.18)} 0%, transparent 36%), linear-gradient(180deg, ${alpha(theme.palette.primary.light, 0.42)} 0%, transparent 380px)`,
       }}
     >
-      <EcommerceCorePatternLayer
+      <AlnjoomPatternLayer
         variant="dashboard"
         anchor="end"
         opacity={theme.palette.mode === 'dark' ? 0.2 : 0.26}

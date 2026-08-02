@@ -23,7 +23,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 
-import type { MerchantRequester } from '../../merchant-dashboard.types';
+import type { AdminRequester } from '../../admin-dashboard.types';
 import type {
   AdvancedOffer,
   AdvancedOfferType,
@@ -39,7 +39,7 @@ import { FloatingActionButton } from '../../components/ui';
 import { clearFieldErrors, isApiError, mapFieldErrors } from '../../../../lib/api-error';
 
 interface PromotionsPanelProps {
-  request: MerchantRequester;
+  request: AdminRequester;
   mode?: PromotionsSection;
 }
 
@@ -122,7 +122,7 @@ export function PromotionsPanel({ request, mode = 'offers' }: PromotionsPanelPro
     },
     offers: {
       title: 'العروض التسويقية',
-      description: 'إدارة العروض التلقائية المطبقة على السلة أو منتج أو تصنيف محدد.',
+      description: 'إدارة العروض التلقائية المطبقة على السلة أو منتج أو قسم محدد.',
       createLabel: 'عرض جديد',
     },
     advanced: {
@@ -488,7 +488,7 @@ export function PromotionsPanel({ request, mode = 'offers' }: PromotionsPanelPro
                 <TextField select label="يطبق على" fullWidth value={offerForm.targetType} error={Boolean(fieldErrors.targetType)} helperText={fieldErrors.targetType} onChange={(event) => { setFieldErrors((prev) => clearFieldErrors(prev, ['targetType'])); setOfferForm((prev) => ({ ...prev, targetType: event.target.value as OfferTargetType })); }}>
                   <MenuItem value="cart">كامل السلة</MenuItem>
                   <MenuItem value="product">منتج محدد</MenuItem>
-                  <MenuItem value="category">تصنيف محدد</MenuItem>
+                  <MenuItem value="category">قسم محدد</MenuItem>
                 </TextField>
                 {offerForm.targetType === 'product' && (
                   <Autocomplete
@@ -511,7 +511,7 @@ export function PromotionsPanel({ request, mode = 'offers' }: PromotionsPanelPro
                     }
                     getOptionLabel={(option) => option.nameAr ?? option.name}
                     isOptionEqualToValue={(option, value) => option.id === value.id}
-                    renderInput={(params) => <TextField {...params} label="اختر التصنيف بالاسم" fullWidth error={Boolean(fieldErrors.targetCategoryId)} helperText={fieldErrors.targetCategoryId} />}
+                    renderInput={(params) => <TextField {...params} label="اختر القسم بالاسم" fullWidth error={Boolean(fieldErrors.targetCategoryId)} helperText={fieldErrors.targetCategoryId} />}
                   />
                 )}
                 

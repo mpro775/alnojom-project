@@ -12,7 +12,7 @@ export class DatabaseService implements OnModuleDestroy {
     const databaseUrl =
       this.configService?.get<string>('DATABASE_URL') ??
       process.env.DATABASE_URL ??
-      'postgres://ecommerce_core:password@localhost:5432/ecommerce_core_store';
+      'postgres://alnjoom:password@localhost:5432/alnjoom_telecom_store';
 
     const redisUrl =
       this.configService?.get<string>('REDIS_URL') ??

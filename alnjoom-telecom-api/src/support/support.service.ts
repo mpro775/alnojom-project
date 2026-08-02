@@ -80,7 +80,7 @@ export class SupportService {
     const ticket = await this.supportRepository.createTicket({
       storeId: currentUser.storeId,
       scope: dto.scope,
-      source: 'merchant_portal',
+      source: 'admin_portal',
       subject: dto.subject.trim(),
       description: dto.description?.trim() ?? null,
       status: 'open',
@@ -526,7 +526,7 @@ export class SupportService {
         type: 'support.ticket.assigned',
         title: `Ticket assigned: ${ticket.subject}`,
         body: `A support ticket was assigned to you (#${ticket.id.slice(0, 8)}).`,
-        actionUrl: `/merchant?tab=supportTickets&ticketId=${encodeURIComponent(ticket.id)}`,
+        actionUrl: `/admin?tab=supportTickets&ticketId=${encodeURIComponent(ticket.id)}`,
         metadata: {
           ticketId: ticket.id,
           scope: ticket.scope,
@@ -567,7 +567,7 @@ export class SupportService {
           type: 'support.ticket.created',
           title: `New customer support ticket: ${ticket.subject}`,
           body: firstMessage.slice(0, 300),
-          actionUrl: `/merchant?tab=supportTickets&ticketId=${encodeURIComponent(ticket.id)}`,
+          actionUrl: `/admin?tab=supportTickets&ticketId=${encodeURIComponent(ticket.id)}`,
           metadata: {
             ticketId: ticket.id,
             scope: ticket.scope,
@@ -598,7 +598,7 @@ export class SupportService {
       recipientStoreUserId: null,
       recipientCustomerId: null,
       type: 'support.ticket.created',
-      title: `Merchant support ticket created: ${ticket.subject}`,
+      title: `Admin support ticket created: ${ticket.subject}`,
       body: firstMessage.slice(0, 300),
       actionUrl: null,
       metadata: {
@@ -622,7 +622,7 @@ export class SupportService {
           type: 'support.ticket.updated',
           title: `Customer replied: ${ticket.subject}`,
           body: message.message.slice(0, 300),
-          actionUrl: `/merchant?tab=supportTickets&ticketId=${encodeURIComponent(ticket.id)}`,
+          actionUrl: `/admin?tab=supportTickets&ticketId=${encodeURIComponent(ticket.id)}`,
           metadata: { ticketId: ticket.id },
         });
       } else if (ticket.requester_customer_id) {
@@ -648,7 +648,7 @@ export class SupportService {
         recipientStoreUserId: null,
         recipientCustomerId: null,
         type: 'support.ticket.updated',
-        title: `Merchant replied: ${ticket.subject}`,
+        title: `Store team replied: ${ticket.subject}`,
         body: message.message.slice(0, 300),
         actionUrl: null,
         metadata: { ticketId: ticket.id },
@@ -662,7 +662,7 @@ export class SupportService {
         type: 'support.ticket.updated',
         title: `Support replied: ${ticket.subject}`,
         body: message.message.slice(0, 300),
-        actionUrl: `/merchant?tab=supportTickets&ticketId=${encodeURIComponent(ticket.id)}`,
+        actionUrl: `/admin?tab=supportTickets&ticketId=${encodeURIComponent(ticket.id)}`,
         metadata: { ticketId: ticket.id },
       });
     }
@@ -695,7 +695,7 @@ export class SupportService {
       recipientStoreUserId: null,
       recipientCustomerId: null,
       type: status === 'resolved' ? 'support.ticket.resolved' : 'support.ticket.updated',
-      title: `Merchant ticket status changed: ${ticket.subject}`,
+      title: `Admin ticket status changed: ${ticket.subject}`,
       body: `Status changed to ${status}.`,
       actionUrl: null,
       metadata: { ticketId: ticket.id, status },

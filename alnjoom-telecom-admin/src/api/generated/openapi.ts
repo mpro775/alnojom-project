@@ -2308,14 +2308,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/merchant/fulfillment": {
+    "/admin/fulfillment": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["MerchantFulfillmentController_getSettings"];
+        get: operations["AdminFulfillmentController_getSettings"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2324,7 +2324,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/merchant/fulfillment/quick-setup": {
+    "/admin/fulfillment/quick-setup": {
         parameters: {
             query?: never;
             header?: never;
@@ -2333,14 +2333,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["MerchantFulfillmentController_quickSetup"];
+        post: operations["AdminFulfillmentController_quickSetup"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/merchant/fulfillment/zones": {
+    "/admin/fulfillment/zones": {
         parameters: {
             query?: never;
             header?: never;
@@ -2349,14 +2349,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["MerchantFulfillmentController_createZone"];
+        post: operations["AdminFulfillmentController_createZone"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/merchant/fulfillment/zones/{zoneId}": {
+    "/admin/fulfillment/zones/{zoneId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2364,15 +2364,15 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["MerchantFulfillmentController_updateZone"];
+        put: operations["AdminFulfillmentController_updateZone"];
         post?: never;
-        delete: operations["MerchantFulfillmentController_removeZone"];
+        delete: operations["AdminFulfillmentController_removeZone"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/merchant/fulfillment/zones/{zoneId}/methods": {
+    "/admin/fulfillment/zones/{zoneId}/methods": {
         parameters: {
             query?: never;
             header?: never;
@@ -2381,14 +2381,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["MerchantFulfillmentController_createMethod"];
+        post: operations["AdminFulfillmentController_createMethod"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/merchant/fulfillment/zones/{zoneId}/methods/{methodId}": {
+    "/admin/fulfillment/zones/{zoneId}/methods/{methodId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2396,9 +2396,9 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["MerchantFulfillmentController_updateMethod"];
+        put: operations["AdminFulfillmentController_updateMethod"];
         post?: never;
-        delete: operations["MerchantFulfillmentController_removeMethod"];
+        delete: operations["AdminFulfillmentController_removeMethod"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2612,14 +2612,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/merchant/payment-methods/available": {
+    "/admin/payment-methods/available": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["MerchantPaymentMethodsController_available"];
+        get: operations["AdminPaymentMethodsController_available"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2628,14 +2628,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/merchant/payment-methods": {
+    "/admin/payment-methods": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["MerchantPaymentMethodsController_list"];
+        get: operations["AdminPaymentMethodsController_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2644,7 +2644,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/merchant/payment-methods/{paymentMethodCatalogId}/enable": {
+    "/admin/payment-methods/{paymentMethodCatalogId}/enable": {
         parameters: {
             query?: never;
             header?: never;
@@ -2653,30 +2653,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["MerchantPaymentMethodsController_enable"];
+        post: operations["AdminPaymentMethodsController_enable"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/merchant/payment-methods/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch: operations["MerchantPaymentMethodsController_update"];
-        trace?: never;
-    };
-    "/merchant/payment-methods/{id}/toggle": {
+    "/admin/payment-methods/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2689,7 +2673,23 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch: operations["MerchantPaymentMethodsController_toggle"];
+        patch: operations["AdminPaymentMethodsController_update"];
+        trace?: never;
+    };
+    "/admin/payment-methods/{id}/toggle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["AdminPaymentMethodsController_toggle"];
         trace?: never;
     };
     "/app/payment-methods": {
@@ -4102,6 +4102,16 @@ export interface components {
         ReplaceVariantWarehouseAllocationsDto: Record<string, never>;
         UpdateWarehousePriorityOrderDto: Record<string, never>;
         UpdateWarehouseDto: Record<string, never>;
+        CommercialErrorResponseDto: {
+            statusCode: number;
+            code?: string;
+            message: string;
+            errors?: Record<string, never>;
+            path: string;
+            /** Format: date-time */
+            timestamp: string;
+            requestId: string | null;
+        };
         FulfillmentSummaryDto: {
             /** @enum {string} */
             type: "delivery" | "pickup" | "external_shipping" | "manual_coordination";
@@ -4142,7 +4152,9 @@ export interface components {
             totals: components["schemas"]["MoneyTotalsDto"];
             version: number;
             note: string | null;
+            /** Format: date-time */
             createdAt: string;
+            /** Format: date-time */
             updatedAt: string;
             customer: components["schemas"]["CustomerSummaryDto"];
             paymentSummary: components["schemas"]["PaymentSummaryDto"];
@@ -4182,6 +4194,7 @@ export interface components {
             from: string | null;
             to: string;
             note: string | null;
+            /** Format: date-time */
             createdAt: string;
         };
         CommercialHistoryDto: {
@@ -4190,6 +4203,7 @@ export interface components {
             command: string;
             reason: string | null;
             actorType: string;
+            /** Format: date-time */
             createdAt: string;
         };
         InventoryReservationSummaryDto: {
@@ -4197,9 +4211,13 @@ export interface components {
             variantId: string;
             quantity: number;
             status: string;
+            /** Format: date-time */
             reservedAt: string;
+            /** Format: date-time */
             expiresAt: string;
+            /** Format: date-time */
             releasedAt: string | null;
+            /** Format: date-time */
             consumedAt: string | null;
             releaseReason: string | null;
         };
@@ -4209,6 +4227,7 @@ export interface components {
             before: Record<string, never> | null;
             after: Record<string, never> | null;
             metadata: Record<string, never>;
+            /** Format: date-time */
             createdAt: string;
         };
         OrderPaymentDto: {
@@ -4235,8 +4254,10 @@ export interface components {
             payerReceiptUrl: string | null;
             payerReceiptMediaAssetId: string | null;
             payerNote: string | null;
+            /** Format: date-time */
             customerSubmittedAt: string | null;
             reviewedBy: string | null;
+            /** Format: date-time */
             reviewedAt: string | null;
             reviewNote: string | null;
         };
@@ -4260,7 +4281,9 @@ export interface components {
             totals: components["schemas"]["MoneyTotalsDto"];
             version: number;
             note: string | null;
+            /** Format: date-time */
             createdAt: string;
+            /** Format: date-time */
             updatedAt: string;
             customer: components["schemas"]["CustomerSummaryDto"];
             paymentSummary: components["schemas"]["PaymentSummaryDto"];
@@ -4415,14 +4438,19 @@ export interface components {
             payerReceiptUrl: string | null;
             payerReceiptMediaAssetId: string | null;
             payerNote: string | null;
+            /** Format: date-time */
             customerSubmittedAt: string | null;
             receiptUrl: string | null;
             receiptMediaAssetId: string | null;
+            /** Format: date-time */
             reviewedAt: string | null;
             reviewedBy: string | null;
             reviewNote: string | null;
+            /** Format: date-time */
             customerUploadedAt: string | null;
+            /** Format: date-time */
             createdAt: string;
+            /** Format: date-time */
             updatedAt: string;
             allowedTransitions: components["schemas"]["AllowedTransitionDto"][];
             orderNumber: string;
@@ -4461,14 +4489,19 @@ export interface components {
             payerReceiptUrl: string | null;
             payerReceiptMediaAssetId: string | null;
             payerNote: string | null;
+            /** Format: date-time */
             customerSubmittedAt: string | null;
             receiptUrl: string | null;
             receiptMediaAssetId: string | null;
+            /** Format: date-time */
             reviewedAt: string | null;
             reviewedBy: string | null;
             reviewNote: string | null;
+            /** Format: date-time */
             customerUploadedAt: string | null;
+            /** Format: date-time */
             createdAt: string;
+            /** Format: date-time */
             updatedAt: string;
             allowedTransitions: components["schemas"]["AllowedTransitionDto"][];
         };
@@ -5484,7 +5517,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description List customers for merchant dashboard */
+            /** @description List customers for the admin dashboard */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -5506,7 +5539,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Create customer manually from merchant dashboard */
+            /** @description Create customer manually from the admin dashboard */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -5524,7 +5557,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description List abandoned carts for merchant dashboard */
+            /** @description List abandoned carts for the admin dashboard */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -7662,6 +7695,30 @@ export interface operations {
                     "application/json": components["schemas"]["PaginatedOrdersDto"];
                 };
             };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
         };
     };
     OrdersController_exportExcel: {
@@ -7680,6 +7737,30 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
         };
     };
     OrdersController_searchManualProducts: {
@@ -7697,6 +7778,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
             };
         };
     };
@@ -7719,6 +7824,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
             };
         };
     };
@@ -7744,6 +7873,30 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
         };
     };
     OrdersController_getById: {
@@ -7764,6 +7917,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderDetailDto"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
                 };
             };
         };
@@ -7789,6 +7966,30 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
         };
     };
     OrdersController_cancel: {
@@ -7811,6 +8012,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
             };
         };
     };
@@ -7835,6 +8060,30 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
         };
     };
     OrdersController_startPreparing: {
@@ -7857,6 +8106,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
             };
         };
     };
@@ -7881,6 +8154,30 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
         };
     };
     OrdersController_markReady: {
@@ -7903,6 +8200,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
             };
         };
     };
@@ -7927,6 +8248,30 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
         };
     };
     OrdersController_markFulfilled: {
@@ -7949,6 +8294,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
             };
         };
     };
@@ -7973,6 +8342,30 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
         };
     };
     OrdersController_retry: {
@@ -7996,6 +8389,30 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
         };
     };
     OrdersController_cancelFulfillment: {
@@ -8018,6 +8435,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
             };
         };
     };
@@ -8531,7 +8972,7 @@ export interface operations {
             };
         };
     };
-    MerchantFulfillmentController_getSettings: {
+    AdminFulfillmentController_getSettings: {
         parameters: {
             query?: never;
             header?: never;
@@ -8540,7 +8981,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Get merchant fulfillment settings and readiness */
+            /** @description Get admin fulfillment settings and readiness */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -8549,7 +8990,7 @@ export interface operations {
             };
         };
     };
-    MerchantFulfillmentController_quickSetup: {
+    AdminFulfillmentController_quickSetup: {
         parameters: {
             query?: never;
             header?: never;
@@ -8571,7 +9012,7 @@ export interface operations {
             };
         };
     };
-    MerchantFulfillmentController_createZone: {
+    AdminFulfillmentController_createZone: {
         parameters: {
             query?: never;
             header?: never;
@@ -8593,7 +9034,7 @@ export interface operations {
             };
         };
     };
-    MerchantFulfillmentController_updateZone: {
+    AdminFulfillmentController_updateZone: {
         parameters: {
             query?: never;
             header?: never;
@@ -8617,7 +9058,7 @@ export interface operations {
             };
         };
     };
-    MerchantFulfillmentController_removeZone: {
+    AdminFulfillmentController_removeZone: {
         parameters: {
             query?: never;
             header?: never;
@@ -8637,7 +9078,7 @@ export interface operations {
             };
         };
     };
-    MerchantFulfillmentController_createMethod: {
+    AdminFulfillmentController_createMethod: {
         parameters: {
             query?: never;
             header?: never;
@@ -8661,7 +9102,7 @@ export interface operations {
             };
         };
     };
-    MerchantFulfillmentController_updateMethod: {
+    AdminFulfillmentController_updateMethod: {
         parameters: {
             query?: never;
             header?: never;
@@ -8686,7 +9127,7 @@ export interface operations {
             };
         };
     };
-    MerchantFulfillmentController_removeMethod: {
+    AdminFulfillmentController_removeMethod: {
         parameters: {
             query?: never;
             header?: never;
@@ -9099,7 +9540,7 @@ export interface operations {
             };
         };
     };
-    MerchantPaymentMethodsController_available: {
+    AdminPaymentMethodsController_available: {
         parameters: {
             query?: never;
             header?: never;
@@ -9116,7 +9557,7 @@ export interface operations {
             };
         };
     };
-    MerchantPaymentMethodsController_list: {
+    AdminPaymentMethodsController_list: {
         parameters: {
             query?: never;
             header?: never;
@@ -9133,7 +9574,7 @@ export interface operations {
             };
         };
     };
-    MerchantPaymentMethodsController_enable: {
+    AdminPaymentMethodsController_enable: {
         parameters: {
             query?: never;
             header?: never;
@@ -9152,7 +9593,7 @@ export interface operations {
             };
         };
     };
-    MerchantPaymentMethodsController_update: {
+    AdminPaymentMethodsController_update: {
         parameters: {
             query?: never;
             header?: never;
@@ -9175,7 +9616,7 @@ export interface operations {
             };
         };
     };
-    MerchantPaymentMethodsController_toggle: {
+    AdminPaymentMethodsController_toggle: {
         parameters: {
             query?: never;
             header?: never;
@@ -9930,6 +10371,30 @@ export interface operations {
                     "application/json": components["schemas"]["PaginatedPaymentsDto"];
                 };
             };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
         };
     };
     PaymentsController_listPendingReview: {
@@ -9948,6 +10413,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedPaymentsDto"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
                 };
             };
         };
@@ -9972,6 +10461,30 @@ export interface operations {
                     "application/json": components["schemas"]["PaymentDto"];
                 };
             };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
         };
     };
     PaymentsController_getById: {
@@ -9992,6 +10505,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaymentDto"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
                 };
             };
         };
@@ -10017,6 +10554,30 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
         };
     };
     PaymentsController_resubmitProof: {
@@ -10039,6 +10600,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
             };
         };
     };
@@ -10063,6 +10648,30 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
         };
     };
     PaymentsController_approve: {
@@ -10085,6 +10694,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
             };
         };
     };
@@ -10109,6 +10742,30 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
         };
     };
     PaymentsController_collectCod: {
@@ -10131,6 +10788,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
             };
         };
     };
@@ -10155,6 +10836,30 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
         };
     };
     PaymentsController_cancel: {
@@ -10177,6 +10882,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialErrorResponseDto"];
+                };
             };
         };
     };
@@ -10384,7 +11113,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Get merchant analytics overview */
+            /** @description Get admin analytics overview */
             200: {
                 headers: {
                     [name: string]: unknown;

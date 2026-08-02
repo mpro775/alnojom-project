@@ -25,13 +25,17 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { MerchantLoginPage } from './features/auth/merchant-login-page';
-import { MerchantAcceptInvitePage } from './features/auth/merchant-accept-invite-page';
-import { MerchantDashboard } from './features/merchant/merchant-dashboard';
-import { useMerchantSession } from './features/merchant/use-merchant-session';
-import type { MerchantSession } from './features/merchant/types';
+import { AdminLoginPage } from './features/auth/admin-login-page';
+import { AdminAcceptInvitePage } from './features/auth/admin-accept-invite-page';
+import { AdminDashboard } from './features/admin/admin-dashboard';
+import { useAdminSession } from './features/admin/use-admin-session';
+import type { AdminSession } from './features/admin/types';
+import {
+  ADMIN_ROUTE,
+  canonicalizeLegacyAdminUrl,
+  isLegacyAdminRoute,
+} from './compatibility/legacy-admin-compat';
 
-const ecommerce_core_ICON_SRC = '/brand/ecommerce_core-icon.png';
 const THEME_RIPPLE_EXPAND_MS = 680;
 const SKIP_LINK_SX = {
   position: 'fixed',
@@ -49,7 +53,7 @@ const SKIP_LINK_SX = {
   textDecoration: 'none',
 };
 
-type AppRoute = 'login' | 'merchant' | 'acceptInvite';
+type AppRoute = 'login' | 'admin' | 'acceptInvite';
 type ThemeMode = 'light' | 'dark';
 type ThemeRippleOrigin = { x: number; y: number };
 type ViewTransition = {
@@ -73,8 +77,8 @@ function resolveRoute(pathname: string): AppRoute {
     return 'acceptInvite';
   }
 
-  if (pathname === '/merchant') {
-    return 'merchant';
+  if (pathname === ADMIN_ROUTE || isLegacyAdminRoute(pathname)) {
+    return 'admin';
   }
 
   return 'login';
@@ -82,8 +86,8 @@ function resolveRoute(pathname: string): AppRoute {
 
 function resolvePath(route: AppRoute): string {
   switch (route) {
-    case 'merchant':
-      return '/merchant';
+    case 'admin':
+      return ADMIN_ROUTE;
     case 'acceptInvite':
       return '/accept-invite';
     case 'login':
@@ -159,7 +163,7 @@ export function App({
   const theme = useTheme();
   const isRtl = theme.direction === 'rtl';
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [session, setSession] = useMerchantSession();
+  const [session, setSession] = useAdminSession();
   const [route, setRoute] = useState<AppRoute>(() => resolveRoute(window.location.pathname));
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const isThemeRippleRunningRef = useRef(false);
@@ -196,6 +200,15 @@ export function App({
   );
 
   useEffect(() => {
+    const compatibilityUrl = canonicalizeLegacyAdminUrl(
+      window.location.pathname,
+      window.location.search,
+      window.location.hash,
+    );
+    if (compatibilityUrl) {
+      window.history.replaceState({}, '', compatibilityUrl);
+    }
+
     const nextRoute = resolveRoute(window.location.pathname);
     const expectedPath = resolvePath(nextRoute);
     if (window.location.pathname !== expectedPath) {
@@ -205,6 +218,14 @@ export function App({
     setRoute(nextRoute);
 
     const handlePopState = () => {
+      const nextCompatibilityUrl = canonicalizeLegacyAdminUrl(
+        window.location.pathname,
+        window.location.search,
+        window.location.hash,
+      );
+      if (nextCompatibilityUrl) {
+        window.history.replaceState({}, '', nextCompatibilityUrl);
+      }
       setRoute(resolveRoute(window.location.pathname));
     };
 
@@ -228,39 +249,39 @@ export function App({
   }, []);
 
   useEffect(() => {
-    if (route === 'merchant' && !session) {
+    if (route === 'admin' && !session) {
       navigate('login', true);
       return;
     }
 
     if ((route === 'login' || route === 'acceptInvite') && session) {
-      navigate('merchant', true);
+      navigate('admin', true);
     }
   }, [navigate, route, session]);
 
   const navigationItems = useMemo<Array<{ route: AppRoute; label: string; icon: ReactElement }>>(
     () => [
-      { route: 'login', label: '???? ??????', icon: <LoginRoundedIcon fontSize="small" /> },
-      { route: 'merchant', label: '???? ??????', icon: <StorefrontRoundedIcon fontSize="small" /> },
+      { route: 'login', label: 'تسجيل الدخول', icon: <LoginRoundedIcon fontSize="small" /> },
+      { route: 'admin', label: 'لوحة الإدارة', icon: <StorefrontRoundedIcon fontSize="small" /> },
     ],
     [],
   );
 
   const shellItems = useMemo(
     () =>
-      route === 'merchant'
-        ? navigationItems.filter((item) => item.route === 'merchant')
+      route === 'admin'
+        ? navigationItems.filter((item) => item.route === 'admin')
         : navigationItems,
     [navigationItems, route],
   );
 
-  function renderRouteContent(currentRoute: AppRoute, currentSession: MerchantSession | null) {
+  function renderRouteContent(currentRoute: AppRoute, currentSession: AdminSession | null) {
     if (currentRoute === 'login') {
       return (
-        <MerchantLoginPage
+        <AdminLoginPage
           onLoggedIn={(nextSession) => {
             setSession(nextSession);
-            navigate('merchant', true);
+            navigate('admin', true);
           }}
           onBackHome={() => navigate('login')}
         />
@@ -269,10 +290,10 @@ export function App({
 
     if (currentRoute === 'acceptInvite') {
       return (
-        <MerchantAcceptInvitePage
+        <AdminAcceptInvitePage
           onAccepted={(nextSession) => {
             setSession(nextSession);
-            navigate('merchant', true);
+            navigate('admin', true);
           }}
           onBackHome={() => navigate('login')}
           onSignIn={() => navigate('login')}
@@ -280,9 +301,9 @@ export function App({
       );
     }
 
-    if (currentRoute === 'merchant' && currentSession) {
+    if (currentRoute === 'admin' && currentSession) {
       return (
-        <MerchantDashboard
+        <AdminDashboard
           session={currentSession}
           onSessionUpdate={setSession}
           themeMode={themeMode}
@@ -302,13 +323,13 @@ export function App({
   const isStandalonePage =
     route === 'login' || route === 'acceptInvite';
 
-  if (route === 'merchant') {
+  if (route === 'admin') {
     return (
       <>
-        <Box component="a" href="#merchant-main-content" sx={SKIP_LINK_SX}>
+        <Box component="a" href="#admin-main-content" sx={SKIP_LINK_SX}>
           تجاوز إلى المحتوى الرئيسي
         </Box>
-        <Box id="merchant-main-content">{renderRouteContent(route, session)}</Box>
+        <Box id="admin-main-content">{renderRouteContent(route, session)}</Box>
       </>
     );
   }
@@ -316,10 +337,10 @@ export function App({
   if (isStandalonePage) {
     return (
       <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default', py: { xs: 1, md: 2 } }}>
-        <Box component="a" href="#merchant-main-content" sx={SKIP_LINK_SX}>
+        <Box component="a" href="#admin-main-content" sx={SKIP_LINK_SX}>
           تجاوز إلى المحتوى الرئيسي
         </Box>
-        <Container maxWidth="xl" id="merchant-main-content">{renderRouteContent(route, session)}</Container>
+        <Container maxWidth="xl" id="admin-main-content">{renderRouteContent(route, session)}</Container>
       </Box>
     );
   }
@@ -336,7 +357,7 @@ export function App({
             ) : null}
             <Stack spacing={0}>
               <Typography variant="h6" sx={{ fontWeight: 800 }}>
-                بوابة إدارة النظام
+                لوحة إدارة نجوم تليكوم
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 المسار الحالي: {resolvePath(route)}
@@ -357,19 +378,18 @@ export function App({
               </Button>
             )}
             <Box
-              component="img"
-              src={ecommerce_core_ICON_SRC}
-              alt="Ecommerce Core"
+              aria-label="Alnjoom Telecom"
+              role="img"
               sx={{
                 width: 36,
                 height: 36,
-                objectFit: 'contain',
-                filter:
-                  theme.palette.mode === 'dark'
-                    ? 'drop-shadow(0 6px 10px rgba(0,0,0,0.28))'
-                    : 'none',
+                display: 'grid',
+                placeItems: 'center',
+                color: 'primary.main',
               }}
-            />
+            >
+              <StorefrontRoundedIcon />
+            </Box>
           </Stack>
         </Toolbar>
       </AppBar>
@@ -422,13 +442,13 @@ export function App({
         </List>
       </Drawer>
 
-      <Box component="a" href="#merchant-main-content" sx={SKIP_LINK_SX}>
+      <Box component="a" href="#admin-main-content" sx={SKIP_LINK_SX}>
         تجاوز إلى المحتوى الرئيسي
       </Box>
 
       <Box
         component="main"
-        id="merchant-main-content"
+        id="admin-main-content"
         sx={{
           marginInlineStart: { xs: 0, md: '280px' },
           pb: isMobile ? 10 : 3,

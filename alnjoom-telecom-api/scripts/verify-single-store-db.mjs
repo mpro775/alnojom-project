@@ -1,7 +1,7 @@
 import pg from 'pg';
 
 const connectionString =
-  process.env.DATABASE_URL ?? 'postgres://ecommerce_core:password@localhost:5432/ecommerce_core_store';
+  process.env.DATABASE_URL ?? 'postgres://alnjoom:password@localhost:5432/alnjoom_telecom_store';
 const verifySeed = process.env.VERIFY_SEED === '1';
 const client = new pg.Client({ connectionString });
 

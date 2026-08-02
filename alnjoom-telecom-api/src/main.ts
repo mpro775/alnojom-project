@@ -83,8 +83,8 @@ function configureSecurity(
 
 function configureSwagger(app: INestApplication): void {
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('General Ecommerce API')
-    .setDescription('General Ecommerce backend APIs')
+    .setTitle('Alnjoom Telecom Store API')
+    .setDescription('Backend APIs for Alnjoom Telecom Store')
     .setVersion('0.1.0')
     .addBearerAuth()
     .build();

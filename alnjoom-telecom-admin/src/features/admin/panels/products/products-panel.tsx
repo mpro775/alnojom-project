@@ -1,4 +1,4 @@
-﻿import {
+import {
   AddIcon,
   ArrowForwardIcon,
   CheckCircleIcon,
@@ -47,7 +47,7 @@ import {
   Typography,
 } from '@mui/material';
 
-import type { MerchantRequester } from '../../merchant-dashboard.types';
+import type { AdminRequester } from '../../admin-dashboard.types';
 import { AppPage, DataTableWrapper, FilterBar, FloatingActionButton, PageHeader } from '../../components/ui';
 import type {
   Attribute,
@@ -74,7 +74,7 @@ import { normalizeSlug, sanitizeSlugInput } from '../../utils/slug';
 import { firstFieldError, isApiError, type ApiFieldErrors } from '../../../../lib/api-error';
 
 interface ProductsPanelProps {
-  request: MerchantRequester;
+  request: AdminRequester;
 }
 
 interface ProductCompletionIssue {
@@ -925,11 +925,11 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
         const pendingGeneratedDrafts = generatedVariantDrafts;
         const pendingDefaultWarehouseRows = warehouseAllocationRows;
         if (!validateWarehouseAllocationRows(pendingDefaultWarehouseRows)) {
-          setMessage({ text: 'تحقق من كميات المستودعات قبل حفظ المنتج', type: 'error' });
+          setMessage({ text: 'تحقق من كميات المخازن قبل حفظ المنتج', type: 'error' });
           return;
         }
         if (pendingGeneratedDrafts.some((draft) => !validateWarehouseAllocationRows(draft.warehouseRows))) {
-          setMessage({ text: 'تحقق من كميات المستودعات للمتغيرات المولدة قبل حفظ المنتج', type: 'error' });
+          setMessage({ text: 'تحقق من كميات المخازن لخيارات المنتج المولدة قبل حفظ المنتج', type: 'error' });
           return;
         }
 
@@ -1003,7 +1003,7 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
         setMessage({
           text:
             options?.successMessage ??
-            'تم إنشاء مسودة مخفية للمنتج. يمكنك الآن إكمال الصور والفلاتر والملفات.',
+            'تم إنشاء مسودة مخفية للمنتج. يمكنك الآن إكمال الصور وفلاتر المواصفات والملفات.',
           type: 'success',
         });
         return;
@@ -1120,7 +1120,7 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
 
   function _generateVariantDrafts(): void {
     if (selectedVariantAttributeIds.length === 0) {
-      setMessage({ text: 'اختر الخصائص التي تريد توليد المتغيرات منها أولاً.', type: 'error' });
+      setMessage({ text: 'اختر المواصفات التي تريد توليد خيارات المنتج منها أولاً.', type: 'error' });
       return;
     }
 
@@ -1133,7 +1133,7 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
       .filter((entry) => entry.values.length > 0);
 
     if (selectedAttributes.length === 0) {
-      setMessage({ text: 'أضف قيماً نشطة للخصائص أولاً قبل توليد المتغيرات.', type: 'error' });
+      setMessage({ text: 'أضف قيماً نشطة للمواصفات أولاً قبل توليد خيارات المنتج.', type: 'error' });
       return;
     }
 
@@ -1182,7 +1182,7 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
 
     setGeneratedVariantDrafts(drafts);
     setMessage({
-      text: drafts.length > 0 ? `تم توليد ${drafts.length} متغير قابل للمراجعة.` : 'لا توجد تركيبات جديدة غير مضافة.',
+      text: drafts.length > 0 ? `تم توليد ${drafts.length} خيار منتج قابل للمراجعة.` : 'لا توجد تركيبات جديدة غير مضافة.',
       type: drafts.length > 0 ? 'success' : 'info',
     });
   }
@@ -1215,7 +1215,7 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
   async function _saveGeneratedVariantDrafts(): Promise<void> {
     if (!selectedProduct || generatedVariantDrafts.length === 0) return;
     if (generatedVariantDrafts.some((draft) => !validateWarehouseAllocationRows(draft.warehouseRows))) {
-      setMessage({ text: 'تحقق من كميات المستودعات للمتغيرات المولدة قبل الحفظ', type: 'error' });
+      setMessage({ text: 'تحقق من كميات المخازن لخيارات المنتج المولدة قبل الحفظ', type: 'error' });
       return;
     }
     setActionLoading(true);
@@ -1248,10 +1248,10 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
       }
       setGeneratedVariantDrafts([]);
       await loadProductDetails(selectedProduct.id);
-      setMessage({ text: 'تم حفظ المتغيرات المولدة بنجاح.', type: 'success' });
+      setMessage({ text: 'تم حفظ خيارات المنتج المولدة بنجاح.', type: 'success' });
     } catch (error) {
       setMessage({
-        text: error instanceof Error ? error.message : 'تعذر حفظ المتغيرات المولدة',
+        text: error instanceof Error ? error.message : 'تعذر حفظ خيارات المنتج المولدة',
         type: 'error',
       });
     } finally {
@@ -1393,10 +1393,10 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
       const safeRows = rows ?? [];
       setProductWarehouseLinks(safeRows);
       setSelectedProductWarehouseIds(safeRows.map((row) => row.warehouseId));
-      setMessage({ text: 'تم حفظ مستودعات المنتج بنجاح', type: 'success' });
+      setMessage({ text: 'تم حفظ مخازن المنتج بنجاح', type: 'success' });
     } catch (error) {
       setMessage({
-        text: error instanceof Error ? error.message : 'تعذر حفظ مستودعات المنتج',
+        text: error instanceof Error ? error.message : 'تعذر حفظ مخازن المنتج',
         type: 'error',
       });
     } finally {
@@ -1427,7 +1427,7 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
             (!Number.isInteger(row.reorderPoint) || Number(row.reorderPoint) < 0)),
       )
     ) {
-      setMessage({ text: 'تحقق من كميات المستودعات والحدود قبل الحفظ', type: 'error' });
+      setMessage({ text: 'تحقق من كميات المخازن والحدود قبل الحفظ', type: 'error' });
       return;
     }
 
@@ -1442,10 +1442,10 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
         },
       );
       setWarehouseAllocationRows(buildProductWarehouseAllocationRows(warehouses, rows ?? []));
-      setMessage({ text: 'تم حفظ كميات المستودعات للمتغير بنجاح', type: 'success' });
+      setMessage({ text: 'تم حفظ كميات المخازن لخيار المنتج بنجاح', type: 'success' });
     } catch (error) {
       setMessage({
-        text: error instanceof Error ? error.message : 'تعذر حفظ كميات المستودعات',
+        text: error instanceof Error ? error.message : 'تعذر حفظ كميات المخازن',
         type: 'error',
       });
     } finally {
@@ -1475,7 +1475,7 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
 
   async function _addVariant(): Promise<void> {
     if (!selectedProduct) {
-      setMessage({ text: 'احفظ المنتج كمسودة أولًا قبل إضافة المتغيرات.', type: 'error' });
+      setMessage({ text: 'احفظ المنتج كمسودة أولًا قبل إضافة خيارات المنتج.', type: 'error' });
       return;
     }
 
@@ -1488,10 +1488,10 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
       });
       setVariantForm(createVariantFormDefault());
       await loadProductDetails(selectedProduct.id);
-      setMessage({ text: 'تمت إضافة المتغير بنجاح', type: 'success' });
+      setMessage({ text: 'تمت إضافة خيار المنتج بنجاح', type: 'success' });
     } catch (error) {
       setMessage({
-        text: error instanceof Error ? error.message : 'تعذر إضافة المتغير',
+        text: error instanceof Error ? error.message : 'تعذر إضافة خيار المنتج',
         type: 'error',
       });
     } finally {
@@ -1511,10 +1511,10 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
         }),
       });
       await loadProductDetails(selectedProduct.id);
-      setMessage({ text: 'تم تحديث خصائص المتغير بنجاح', type: 'success' });
+      setMessage({ text: 'تم تحديث مواصفات خيار المنتج بنجاح', type: 'success' });
     } catch (error) {
       setMessage({
-        text: error instanceof Error ? error.message : 'تعذر تحديث الخصائص',
+        text: error instanceof Error ? error.message : 'تعذر تحديث المواصفات',
         type: 'error',
       });
     } finally {
@@ -1537,7 +1537,7 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
       titleAr: (variant as any).titleAr ?? variant.title,
       titleEn: (variant as any).titleEn ?? '',
     });
-    setMessage({ text: 'تم تحميل بيانات المتغير للتعديل', type: 'info' });
+    setMessage({ text: 'تم تحميل بيانات خيار المنتج للتعديل', type: 'info' });
   }
 
   function startImageCropQueue(items: PendingProductImageItem[]): void {
@@ -2096,9 +2096,9 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
                         disabled={Boolean(selectedProduct)}
                         helperText={selectedProduct ? 'لا يفضل تغيير النوع بعد إنشاء المنتج.' : undefined}
                       >
-                        <MenuItem value="single">منتج فردي</MenuItem>
-                        <MenuItem value="digital">ملف رقمي</MenuItem>
-                        <MenuItem value="bundled">منتج مجمع</MenuItem>
+                        <MenuItem value="single">منتج عادي</MenuItem>
+                        <MenuItem value="digital">منتج رقمي / كود إلكتروني</MenuItem>
+                        <MenuItem value="bundled">باقة منتجات</MenuItem>
                       </TextField>
                       <TextField
                         select
@@ -2167,7 +2167,7 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
                             setFieldErrors((prev) => clearFieldErrors(prev, ['price']));
                             setVariantForm((prev) => ({ ...prev, price: event.target.value }));
                           }}
-                          helperText={fieldErrors.price || (selectedProduct ? 'يستخدم عند إضافة متغير جديد.' : undefined)}
+                          helperText={fieldErrors.price || (selectedProduct ? 'يستخدم عند إضافة خيار منتج جديد.' : undefined)}
                         />
                         <TextField
                           label="السعر قبل الخصم"
@@ -2346,7 +2346,7 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
                                 <TextField
                                   size="small"
                                   select
-                                  label="ربط بمتغير"
+                                  label="ربط بخيار منتج"
                                   value={item.image.variantId}
                                   error={Boolean(fieldErrors.variantId)}
                                   helperText={fieldErrors.variantId}
@@ -2523,7 +2523,7 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
                         />
                       </Box>
                       <Alert severity="info" sx={{ borderRadius: 2 }}>
-                        عند تحرير منتج موجود، تظهر أسعار المتغيرات الحالية في سكشن خيارات المنتج.
+                        عند تحرير منتج موجود، تظهر أسعار خيارات المنتج الحالية في سكشن خيارات المنتج.
                       </Alert>
                     </Stack>
                   ) : null}
@@ -2647,8 +2647,8 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
                 </ProductSection>
 
                 <ProductSection
-                  title="التصنيفات والتنظيم"
-                  description="التصنيفات، العلامات التجارية، الوسوم، والفلاتر."
+                  title="الأقسام والتنظيم"
+                  description="الأقسام، العلامات التجارية، الوسوم، وفلاتر المواصفات."
                   expanded
                   onChange={() => undefined}
                   collapsible={false}
@@ -2675,7 +2675,7 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
                       </TextField>
                       <TextField
                         select
-                        label="التصنيفات"
+                        label="الأقسام"
                         value={formCategoryIds}
                         SelectProps={{
                           multiple: true,
@@ -2690,7 +2690,7 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
                               .join('، '),
                         }}
                         error={Boolean(fieldErrors.categoryIds || fieldErrors.categoryId)}
-                        helperText={fieldErrors.categoryIds || fieldErrors.categoryId || 'يمكن اختيار أكثر من تصنيف من هذا الحقل.'}
+                        helperText={fieldErrors.categoryIds || fieldErrors.categoryId || 'يمكن اختيار أكثر من قسم من هذا الحقل.'}
                         onChange={(event) => {
                           setFieldErrors((prev) => clearFieldErrors(prev, ['categoryIds', 'categoryId']));
                           const value = event.target.value;
@@ -2757,11 +2757,11 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
                     </TextField>
 
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                      تظهر هنا فقط الفلاتر اليدوية. أما الفلاتر التلقائية مثل البراند، السعر، المخزون، المستودعات والخصائص، فتظهر في المتجر تلقائيًا من بيانات المنتج.
+                      تظهر هنا فقط فلاتر المواصفات اليدوية. أما فلاتر المواصفات التلقائية مثل البراند، السعر، المخزون، المخازن والمواصفات، فتظهر في المتجر تلقائيًا من بيانات المنتج.
                     </Typography>
                     {!selectedProduct ? (
                       <Alert severity="info" sx={{ borderRadius: 2 }}>
-                        سيتم حفظ الفلاتر بعد إنشاء المسودة.
+                        سيتم حفظ فلاتر المواصفات بعد إنشاء المسودة.
                       </Alert>
                     ) : productAssignableFilters.length === 0 ? (
                       <Alert severity="info" sx={{ borderRadius: 2 }}>
@@ -3018,8 +3018,8 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
 
                 {isSingleProduct ? (
                   <ProductSection
-                    title="المستودعات والمخزون"
-                    description="اختيار المستودعات وتوزيع كميات المتغيرات مباشرة من صفحة المنتج."
+                    title="المخازن والمخزون"
+                    description="اختيار المخازن وتوزيع كميات خيارات المنتج مباشرة من صفحة المنتج."
                     expanded={isProductSectionExpanded('warehouses', false)}
                     onChange={() => toggleProductSection('warehouses', false)}
                   >
@@ -3041,26 +3041,26 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
                       {selectedProduct ? (
                         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }}>
                           <Button variant="outlined" onClick={() => saveSelectedProductWarehouseLinks().catch(() => undefined)} disabled={warehouseSaving || warehouses.length === 0}>
-                            حفظ مستودعات المنتج
+                            حفظ مخازن المنتج
                           </Button>
                           <Typography variant="body2" color="text.secondary">
-                            المستودعات المرتبطة حالياً: {productWarehouseLinks.length}
+                            المخازن المرتبطة حالياً: {productWarehouseLinks.length}
                           </Typography>
                         </Stack>
                       ) : (
-                        <Alert severity="info">سيتم حفظ المستودعات والكميات تلقائياً عند حفظ المنتج.</Alert>
+                        <Alert severity="info">سيتم حفظ المخازن والكميات تلقائياً عند حفظ المنتج.</Alert>
                       )}
 
                       <Divider />
 
                       <TextField
                         select
-                        label="اختر المتغير لتوزيع الكميات"
+                        label="اختر خيار المنتج لتوزيع الكميات"
                         value={warehouseAllocationVariantId}
                         onChange={(event) => loadWarehouseAllocationForVariant(event.target.value).catch(() => undefined)}
                         disabled={(selectedProduct?.variants ?? []).length === 0}
                       >
-                        <MenuItem value="">اختر المتغير</MenuItem>
+                        <MenuItem value="">اختر خيار المنتج</MenuItem>
                         {(selectedProduct?.variants ?? []).map((variant) => (
                           <MenuItem key={variant.id} value={variant.id}>
                             {(variant.titleAr ?? variant.title) || variant.sku} - {variant.sku}
@@ -3074,7 +3074,7 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
                             <TableHead>
                               <TableRow>
                                 <TableCell>تفعيل</TableCell>
-                                <TableCell>المستودع</TableCell>
+                                <TableCell>المخزن</TableCell>
                                 <TableCell>الكمية</TableCell>
                                 <TableCell>محجوز</TableCell>
                                 <TableCell>حد التنبيه</TableCell>
@@ -3112,12 +3112,12 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
                           </Table>
                         </TableContainer>
                       ) : (
-                        <Alert severity="info">اختر متغيراً لتحديد كمياته في كل مستودع.</Alert>
+                        <Alert severity="info">اختر خيار منتج لتحديد كمياته في كل مخزن.</Alert>
                       )}
 
                       {selectedProduct ? (
                         <Button variant="contained" onClick={() => saveSelectedVariantWarehouseAllocations().catch(() => undefined)} disabled={warehouseSaving || !warehouseAllocationVariantId}>
-                          حفظ كميات المتغير في المستودعات
+                          حفظ كميات خيار المنتج في المخازن
                         </Button>
                       ) : null}
                     </Stack>
@@ -3340,7 +3340,7 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
     <AppPage>
       <PageHeader
         title="المنتجات"
-        description="أضف منتجاتك ونظم الكتالوج مع صورة واضحة للحالة والتصنيف."
+        description="أضف منتجاتك ونظم الكتالوج مع صورة واضحة للحالة والقسم."
         actions={
           <Button variant="contained" startIcon={<AddIcon />} onClick={handleCreateNew}>
             منتج جديد
@@ -3377,7 +3377,7 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             <Chip size="small" label={`${filteredProducts.length} نتيجة`} color="primary" variant="outlined" />
             {activeListFilterCount > 0 ? (
-              <Chip size="small" label={`${activeListFilterCount} فلتر نشط`} color="secondary" />
+              <Chip size="small" label={`${activeListFilterCount} فلتر مواصفات نشط`} color="secondary" />
             ) : (
               <Chip size="small" label="بدون فلاتر" variant="outlined" />
             )}
@@ -3416,18 +3416,18 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
           sx={{ minWidth: 0 }}
         >
           <MenuItem value="all">كل الأنواع</MenuItem>
-          <MenuItem value="single">فردي</MenuItem>
-          <MenuItem value="digital">رقمي</MenuItem>
-          <MenuItem value="bundled">مجمع</MenuItem>
+          <MenuItem value="single">منتج عادي</MenuItem>
+          <MenuItem value="digital">منتج رقمي / كود إلكتروني</MenuItem>
+          <MenuItem value="bundled">باقة منتجات</MenuItem>
         </TextField>
         <TextField
           select
-          label="التصنيف"
+          label="القسم"
           value={listCategoryFilter}
           onChange={(event) => setListCategoryFilter(event.target.value)}
           sx={{ minWidth: 0 }}
         >
-          <MenuItem value="all">كل التصنيفات</MenuItem>
+          <MenuItem value="all">كل الأقسام</MenuItem>
           {categories.map((category) => (
             <MenuItem key={category.id} value={category.id}>
               {category.nameAr ?? category.name}
@@ -3490,9 +3490,9 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
                 <TableCell sx={{ width: 60 }}></TableCell>
                 <TableCell>اسم المنتج</TableCell>
                 <TableCell>النوع</TableCell>
-                <TableCell>التصنيف</TableCell>
+                <TableCell>القسم</TableCell>
                 <TableCell>الحالة</TableCell>
-                <TableCell>المتغيرات</TableCell>
+                <TableCell>خيارات المنتج</TableCell>
                 <TableCell align="left">الإجراءات</TableCell>
               </TableRow>
             </TableHead>
@@ -3514,7 +3514,7 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
                   const primaryImageUrl = getProductPrimaryImage(product);
                   const categoryName =
                     categories.find((category) => category.id === product.categoryId)?.name ||
-                    'بدون تصنيف';
+                    'بدون قسم';
                   return (
                     <TableRow
                       key={product.id}
@@ -3574,10 +3574,10 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
                           size="small"
                           label={
                             product.productType === 'digital'
-                              ? 'رقمي'
+                              ? 'منتج رقمي / كود إلكتروني'
                               : product.productType === 'bundled'
-                                ? 'مجمع'
-                                : 'فردي'
+                                ? 'باقة منتجات'
+                                : 'منتج عادي'
                           }
                           color={
                             product.productType === 'digital'
@@ -3601,7 +3601,7 @@ export function ProductsPanel({ request }: ProductsPanelProps) {
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" color="text.secondary">
-                          {product.variants?.length || 0} متغير
+                          {product.variants?.length || 0} خيار منتج
                         </Typography>
                       </TableCell>
                       <TableCell align="left">
@@ -3937,7 +3937,7 @@ function buildVariantPayload(
 ) {
   const primaryArabicTitle = form.titleAr.trim() || form.title.trim();
   if (!primaryArabicTitle) {
-    throw new Error('عنوان المتغير بالعربية مطلوب');
+    throw new Error('عنوان خيار المنتج بالعربية مطلوب');
   }
 
   const payload: {
@@ -4033,7 +4033,7 @@ function _formatVariantAttributes(attributes: Record<string, string>): string {
   return entries.map(([key, value]) => `${key}:${value}`).join(', ');
 }
 
-async function uploadMediaAsset(request: MerchantRequester, file: File): Promise<MediaAsset> {
+async function uploadMediaAsset(request: AdminRequester, file: File): Promise<MediaAsset> {
   const presigned = await request<PresignedMediaUpload>('/media/presign-upload', {
     method: 'POST',
     body: JSON.stringify({

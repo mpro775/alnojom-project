@@ -77,7 +77,7 @@ export function ProductVariantsSection({
           ('reorderPoint' in row && (!Number.isInteger(row.reorderPoint) || Number(row.reorderPoint) < 0)),
       );
     })) {
-      setMessage({ text: 'تحقق من كميات المستودعات للمتغيرات المولدة قبل الحفظ', type: 'error' });
+      setMessage({ text: 'تحقق من كميات المخازن لخيارات المنتج المولدة قبل الحفظ', type: 'error' });
       return;
     }
 
@@ -118,11 +118,11 @@ export function ProductVariantsSection({
       }
       setGeneratedVariantDrafts([]);
       await onLoadProductDetails(selectedProduct.id);
-      setMessage({ text: 'تم حفظ المتغيرات المولدة بنجاح.', type: 'success' });
+      setMessage({ text: 'تم حفظ خيارات المنتج المولدة بنجاح.', type: 'success' });
       setDrawerOpen(false);
     } catch (error) {
       setMessage({
-        text: error instanceof Error ? error.message : 'تعذر حفظ المتغيرات المولدة',
+        text: error instanceof Error ? error.message : 'تعذر حفظ خيارات المنتج المولدة',
         type: 'error',
       });
     }
@@ -133,10 +133,10 @@ export function ProductVariantsSection({
     try {
       await request(`/products/${selectedProduct.id}/variants/${variantId}`, { method: 'DELETE' });
       await onLoadProductDetails(selectedProduct.id);
-      setMessage({ text: 'تم حذف المتغير.', type: 'success' });
+      setMessage({ text: 'تم حذف خيار المنتج.', type: 'success' });
     } catch (error) {
       setMessage({
-        text: error instanceof Error ? error.message : 'تعذر حذف المتغير',
+        text: error instanceof Error ? error.message : 'تعذر حذف خيار المنتج',
         type: 'error',
       });
     }
@@ -160,10 +160,10 @@ export function ProductVariantsSection({
           <Stack direction="row" spacing={1.25} alignItems="center">
             <Box>
               <Typography variant="h6" fontWeight={900}>
-                المتغيرات والخصائص
+                خيارات المنتج والمواصفات
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                إدارة متغيرات المنتج حسب اللون، الرام، السعة وغيرها.
+                إدارة خيارات منتج المنتج حسب اللون، الرام، السعة وغيرها.
               </Typography>
             </Box>
           </Stack>
@@ -174,7 +174,7 @@ export function ProductVariantsSection({
           <Stack spacing={2.5}>
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
               <Paper elevation={0} sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider', bgcolor: 'background.default' }}>
-                <Typography variant="caption" color="text.secondary">متغيرات حالية</Typography>
+                <Typography variant="caption" color="text.secondary">خيارات منتج حالية</Typography>
                 <Typography variant="h5" fontWeight={900}>{totalVariants}</Typography>
               </Paper>
               <Paper elevation={0} sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: generatedCount > 0 ? 'warning.main' : 'divider', bgcolor: generatedCount > 0 ? 'warning.50' : 'background.default' }}>
@@ -193,7 +193,7 @@ export function ProductVariantsSection({
 
             {usedAttributeNames.length > 0 ? (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, alignItems: 'center' }}>
-                <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>الخصائص:</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>المواصفات:</Typography>
                 {usedAttributeNames.map((name) => (
                   <Chip key={name} size="small" label={name} variant="outlined" />
                 ))}
@@ -211,20 +211,20 @@ export function ProductVariantsSection({
 
             {!selectedProduct ? (
               <Alert severity="info" sx={{ borderRadius: 2 }}>
-                احفظ المنتج كمسودة أولًا قبل إضافة متغيرات إضافية.
+                احفظ المنتج كمسودة أولًا قبل إضافة خيارات منتج إضافية.
               </Alert>
             ) : null}
 
             {existingVariants.length > 0 ? (
               <Stack spacing={1}>
                 <Typography variant="caption" color="text.secondary">
-                  هذه المتغيرات محفوظة ويمكن تعديلها من زر إدارة. أما نافذة التوليد فهي لإنشاء متغيرات جديدة من الخصائص المحددة فقط.
+                  خيارات المنتج هذه محفوظة ويمكن تعديلها من زر إدارة. أما نافذة التوليد فهي لإنشاء خيارات منتج جديدة من المواصفات المحددة فقط.
                 </Typography>
                 <TableContainer component={Box} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
                   <Table size="small">
                     <TableHead>
                       <TableRow>
-                        <TableCell>المتغير</TableCell>
+                        <TableCell>خيار المنتج</TableCell>
                         <TableCell>السعر</TableCell>
                         <TableCell>المخزون</TableCell>
                         <TableCell>الحالة</TableCell>
@@ -263,7 +263,7 @@ export function ProductVariantsSection({
 
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
               <Button variant="contained" onClick={() => setDrawerOpen(true)}>
-                توليد متغيرات جديدة
+                توليد خيارات منتج جديدة
               </Button>
               {generatedCount > 0 ? (
                 <>
@@ -272,7 +272,7 @@ export function ProductVariantsSection({
                     onClick={() => handleSaveGeneratedVariants().catch(() => undefined)}
                     disabled={actionLoading || !selectedProduct}
                   >
-                    حفظ المتغيرات المولدة
+                    حفظ خيارات المنتج المولدة
                   </Button>
                   <Button
                     color="error"
@@ -280,7 +280,7 @@ export function ProductVariantsSection({
                     onClick={() => setGeneratedVariantDrafts([])}
                     disabled={actionLoading}
                   >
-                    حذف المتغيرات المولدة
+                    حذف خيارات المنتج المولدة
                   </Button>
                 </>
               ) : null}

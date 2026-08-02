@@ -12,7 +12,7 @@ if (!['up', 'down'].includes(command)) {
 }
 
 const connectionString =
-  process.env.DATABASE_URL ?? 'postgres://ecommerce_core:password@localhost:5432/ecommerce_core_store';
+  process.env.DATABASE_URL ?? 'postgres://alnjoom:password@localhost:5432/alnjoom_telecom_store';
 
 const client = new pg.Client({ connectionString });
 

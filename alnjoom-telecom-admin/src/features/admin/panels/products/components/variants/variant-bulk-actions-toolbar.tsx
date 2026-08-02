@@ -69,7 +69,7 @@ export function VariantBulkActionsToolbar({
         إجراءات جماعية
         {selectedDraftIds.length > 0
           ? ` (${selectedDraftIds.length} محدد)`
-          : ` (${drafts.length} متغير)`}
+          : ` (${drafts.length} خيار منتج)`}
       </Typography>
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} flexWrap="wrap" useFlexGap>
         <TextField

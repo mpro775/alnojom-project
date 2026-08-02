@@ -1,6 +1,6 @@
-# General Ecommerce API
+# Alnjoom Telecom Store API
 
-Backend API for General Ecommerce.
+Backend API for Alnjoom Telecom Store.
 
 ## Tech Stack
 
@@ -52,8 +52,8 @@ npm run worker:abandoned-carts   # Abandoned cart recovery
 ## Docker
 
 ```bash
-docker build -t general-ecommerce-api .
-docker run -p 3000:3000 --env-file .env general-ecommerce-api
+docker build -t alnjoom-telecom-api .
+docker run -p 3000:3000 --env-file .env alnjoom-telecom-api
 ```
 
 ## Project Structure
@@ -68,15 +68,11 @@ src/
 ├── customers/      # Customer management
 ├── shipping/       # Shipping methods
 ├── promotions/     # Coupons & promotions
-├── themes/         # Store themes
-├── domains/        # Custom domains & SSL
 ├── storefront/     # Storefront API
 ├── analytics/      # Analytics & events
 ├── notifications/  # Notification system
 ├── messaging/      # RabbitMQ messaging
 ├── media/          # Media & file uploads
-├── saas/           # SaaS controls & billing
-├── platform/       # Platform admin
 ├── webhooks/       # Webhook system
 ├── workers/        # Background workers
 ├── database/       # Database service

@@ -1,10 +1,10 @@
 import { Alert, Box, List, ListItem, ListItemText, Paper, Typography } from '@mui/material';
-import type { MerchantRequester } from '../merchant-dashboard.types';
+import type { AdminRequester } from '../admin-dashboard.types';
 import type { AnalyticsShipments } from '../types';
 import { AppPage, PageHeader, StatCard } from '../components/ui';
 import { AnalyticsFiltersBar, AnalyticsLoadingState, buildAnalyticsQuery, useAnalyticsData, useAnalyticsFilters } from './analytics-common';
 
-export function AnalyticsShipmentsPanel({ request }: { request: MerchantRequester }) {
+export function AnalyticsShipmentsPanel({ request }: { request: AdminRequester }) {
   const [filters, setFilters] = useAnalyticsFilters();
   const query = buildAnalyticsQuery(filters);
   const { data, loading, error, refresh } = useAnalyticsData<AnalyticsShipments>(

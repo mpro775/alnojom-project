@@ -14,7 +14,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import type { MerchantRequester } from '../../merchant-dashboard.types';
+import type { AdminRequester } from '../../admin-dashboard.types';
 import type {
   NotificationCategory,
   NotificationPreference,
@@ -24,7 +24,7 @@ import type {
 import { AppPage, DataTableWrapper, FilterBar, PageHeader } from '../../components/ui';
 
 interface NotificationsCenterPanelProps {
-  request: MerchantRequester;
+  request: AdminRequester;
   notificationRealtimeVersion?: number;
 }
 
@@ -211,7 +211,7 @@ export function NotificationsCenterPanel({
     <AppPage maxWidth={1300}>
       <PageHeader
         title="مركز الإشعارات"
-        description="إدارة تنبيهات المتجر حسب التصنيف والأهمية وتفضيلات الإرسال."
+        description="إدارة تنبيهات المتجر حسب القسم والأهمية وتفضيلات الإرسال."
         actions={
           <Stack direction="row" spacing={1.5}>
             <Button variant="outlined" onClick={() => loadData().catch(() => undefined)} disabled={loading || saving}>

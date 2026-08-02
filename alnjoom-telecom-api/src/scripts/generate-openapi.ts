@@ -6,11 +6,11 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from '../app.module';
 
 async function generateOpenApi(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { logger: false, preview: true });
+  const app = await NestFactory.create(AppModule, { logger: ['error'], preview: true });
 
   const config = new DocumentBuilder()
-    .setTitle('General Ecommerce API')
-    .setDescription('General Ecommerce backend APIs')
+    .setTitle('Alnjoom Telecom Store API')
+    .setDescription('Backend APIs for Alnjoom Telecom Store')
     .setVersion('0.1.0')
     .addBearerAuth()
     .build();

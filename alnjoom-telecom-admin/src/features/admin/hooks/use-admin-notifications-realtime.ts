@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
-import type { MerchantRequester } from '../merchant-dashboard.types';
-import type { MerchantSession } from '../types';
+import type { AdminRequester } from '../admin-dashboard.types';
+import type { AdminSession } from '../types';
 
 interface UnreadCountResponse {
   count: number;
 }
 
-export function useMerchantNotificationsRealtime(
-  session: MerchantSession,
-  request: MerchantRequester,
+export function useAdminNotificationsRealtime(
+  session: AdminSession,
+  request: AdminRequester,
   onNotificationCreated?: (payload: unknown) => void,
 ) {
   const [unreadCount, setUnreadCount] = useState(0);

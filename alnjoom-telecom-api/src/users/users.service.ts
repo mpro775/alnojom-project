@@ -15,6 +15,7 @@ import { AuditService } from '../audit/audit.service';
 import { AuthRepository } from '../auth/auth.repository';
 import { getTokenHashSecret, hashTokenDeterministic } from '../common/security/token-hash.util';
 import type { RequestContextData } from '../common/utils/request-context.util';
+import { LEGACY_ADMIN_BASE_URL_ENV } from '../compatibility/legacy-branding-runtime';
 import type { AuthUser, StoreRole } from '../auth/interfaces/auth-user.interface';
 import {
   getStoreRolePreset,
@@ -909,10 +910,9 @@ export class UsersService {
   }
 
   private buildInviteUrl(token: string): string {
-    const adminBaseUrl = this.configService.get<string>(
-      'MERCHANT_ADMIN_BASE_URL',
-      'http://localhost:5173',
-    );
+    const adminBaseUrl =
+      this.configService.get<string>('ADMIN_BASE_URL') ??
+      this.configService.get<string>(LEGACY_ADMIN_BASE_URL_ENV, 'http://localhost:5173');
     const normalizedBaseUrl = adminBaseUrl.replace(/\/+$/, '');
     return `${normalizedBaseUrl}/accept-invite?token=${encodeURIComponent(token)}`;
   }

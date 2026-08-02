@@ -19,13 +19,13 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import type { MerchantRequester } from '../../merchant-dashboard.types';
+import type { AdminRequester } from '../../admin-dashboard.types';
 import { DataTableWrapper, FloatingActionButton } from '../../components/ui';
 import type { Attribute, AttributeValue, Filter, FilterSourceType, FilterType, FilterValue } from '../../types';
 import { normalizeSlug, sanitizeSlugInput } from '../../utils/slug';
 
 interface FiltersPanelProps {
-  request: MerchantRequester;
+  request: AdminRequester;
 }
 
 const filterTypeLabels: Record<FilterType, string> = {
@@ -38,18 +38,18 @@ const filterTypeLabels: Record<FilterType, string> = {
 const sourceTypeLabels: Record<FilterSourceType, string> = {
   manual: 'يدوي',
   brand: 'العلامات التجارية',
-  attribute: 'خاصية',
+  attribute: 'مواصفة',
   price: 'أسعار المنتجات',
-  warehouse: 'المستودعات',
+  warehouse: 'المخازن',
   availability: 'التوفر',
 };
 
 const sourceTypeDescriptions: Record<FilterSourceType, string> = {
   manual: 'إدخال القيم يدوياً',
   brand: 'تلقائي من البراندات',
-  attribute: 'تلقائي من الخصائص',
+  attribute: 'تلقائي من المواصفات',
   price: 'تلقائي من الأسعار',
-  warehouse: 'تلقائي من المستودعات',
+  warehouse: 'تلقائي من المخازن',
   availability: 'تلقائي من المخزون',
 };
 
@@ -130,7 +130,7 @@ export function FiltersPanel({ request }: FiltersPanelProps) {
       const data = await request<Filter[]>('/filters?includeValues=true', { method: 'GET' });
       setFilters((data ?? []).map((f) => ({ ...f, sourceType: f.sourceType ?? 'manual' })));
     } catch (error) {
-      setMessage({ text: error instanceof Error ? error.message : 'تعذر تحميل الفلاتر', type: 'error' });
+      setMessage({ text: error instanceof Error ? error.message : 'تعذر تحميل فلاتر المواصفات', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -237,16 +237,16 @@ export function FiltersPanel({ request }: FiltersPanelProps) {
       }
 
       await loadFilters();
-      setMessage({ text: 'تم حفظ الفلتر بنجاح', type: 'success' });
+      setMessage({ text: 'تم حفظ فلتر مواصفات بنجاح', type: 'success' });
     } catch (error) {
-      setMessage({ text: error instanceof Error ? error.message : 'تعذر حفظ الفلتر', type: 'error' });
+      setMessage({ text: error instanceof Error ? error.message : 'تعذر حفظ فلتر مواصفات', type: 'error' });
     } finally {
       setActionLoading(false);
     }
   }
 
   async function deleteFilter(filterId = selectedFilterId): Promise<void> {
-    if (!filterId || !window.confirm('تأكيد حذف الفلتر؟')) {
+    if (!filterId || !window.confirm('تأكيد حذف فلتر مواصفات؟')) {
       return;
     }
     setActionLoading(true);
@@ -260,9 +260,9 @@ export function FiltersPanel({ request }: FiltersPanelProps) {
       setIsValueFormVisible(false);
       setViewMode('list');
       await loadFilters();
-      setMessage({ text: 'تم حذف الفلتر', type: 'success' });
+      setMessage({ text: 'تم حذف فلتر مواصفات', type: 'success' });
     } catch (error) {
-      setMessage({ text: error instanceof Error ? error.message : 'تعذر حذف الفلتر', type: 'error' });
+      setMessage({ text: error instanceof Error ? error.message : 'تعذر حذف فلتر مواصفات', type: 'error' });
     } finally {
       setActionLoading(false);
     }
@@ -270,11 +270,11 @@ export function FiltersPanel({ request }: FiltersPanelProps) {
 
   async function saveValue(): Promise<void> {
     if (!selectedFilterId) {
-      setMessage({ text: 'احفظ الفلتر أولاً', type: 'error' });
+      setMessage({ text: 'احفظ فلتر مواصفات أولاً', type: 'error' });
       return;
     }
     if (isSmartFilter) {
-      setMessage({ text: 'لا يمكن إضافة قيم يدوية لفلتر تلقائي. القيم تأتي من المصدر تلقائياً.', type: 'error' });
+      setMessage({ text: 'لا يمكن إضافة قيم يدوية لفلتر مواصفات تلقائي. القيم تأتي من المصدر تلقائياً.', type: 'error' });
       return;
     }
 
@@ -308,7 +308,7 @@ export function FiltersPanel({ request }: FiltersPanelProps) {
       setValueForm(valueFormDefault);
       setIsValueFormVisible(false);
       await loadFilters();
-      setMessage({ text: 'تم حفظ قيمة الفلتر', type: 'success' });
+      setMessage({ text: 'تم حفظ قيمة فلتر مواصفات', type: 'success' });
     } catch (error) {
       setMessage({ text: error instanceof Error ? error.message : 'تعذر حفظ القيمة', type: 'error' });
     } finally {
@@ -368,9 +368,9 @@ export function FiltersPanel({ request }: FiltersPanelProps) {
         }),
       });
       await loadFilters();
-      setMessage({ text: `تم تفعيل "${attr.nameAr ?? attr.name}" كفلتر`, type: 'success' });
+      setMessage({ text: `تم تفعيل "${attr.nameAr ?? attr.name}" كفلتر مواصفات`, type: 'success' });
     } catch (error) {
-      setMessage({ text: error instanceof Error ? error.message : 'تعذر تفعيل الخاصية كفلتر', type: 'error' });
+      setMessage({ text: error instanceof Error ? error.message : 'تعذر تفعيل المواصفة كفلتر مواصفات', type: 'error' });
     } finally {
       setActionLoading(false);
     }
@@ -388,12 +388,12 @@ export function FiltersPanel({ request }: FiltersPanelProps) {
               </Button>
               <Box>
                 <Typography variant="h5" fontWeight={800}>
-                  {selectedFilterId ? 'تعديل الفلتر' : 'فلتر جديد'}
+                  {selectedFilterId ? 'تعديل فلتر مواصفات' : 'فلتر مواصفات جديد'}
                 </Typography>
                 <Typography color="text.secondary">
                   {selectedFilterId && isSmartFilter
-                    ? `فلتر تلقائي — ${sourceTypeDescriptions[selectedFilter?.sourceType ?? 'manual']}`
-                    : 'بيانات الفلتر وقيمه'}
+                    ? `فلتر مواصفات تلقائي — ${sourceTypeDescriptions[selectedFilter?.sourceType ?? 'manual']}`
+                    : 'بيانات فلتر مواصفات وقيمه'}
                 </Typography>
               </Box>
             </Stack>
@@ -405,11 +405,11 @@ export function FiltersPanel({ request }: FiltersPanelProps) {
                   onClick={() => deleteFilter().catch(() => undefined)}
                   disabled={actionLoading}
                 >
-                  حذف الفلتر
+                  حذف فلتر مواصفات
                 </Button>
               ) : null}
               <Button variant="contained" onClick={() => saveFilter().catch(() => undefined)} disabled={actionLoading}>
-                حفظ الفلتر
+                حفظ فلتر مواصفات
               </Button>
             </Stack>
           </Stack>
@@ -421,7 +421,7 @@ export function FiltersPanel({ request }: FiltersPanelProps) {
           <Stack spacing={2.5}>
             <TextField
               select
-              label="مصدر الفلتر"
+              label="مصدر فلتر مواصفات"
               value={filterForm.sourceType}
               onChange={(event) =>
                 setFilterForm((prev) => ({
@@ -436,16 +436,16 @@ export function FiltersPanel({ request }: FiltersPanelProps) {
             >
               <MenuItem value="manual">يدوي — إدخال القيم يدوياً</MenuItem>
               <MenuItem value="brand">البراندات — تلقائي من البراندات</MenuItem>
-              <MenuItem value="attribute">خاصية — تلقائي من الخصائص</MenuItem>
+              <MenuItem value="attribute">مواصفة — تلقائي من المواصفات</MenuItem>
               <MenuItem value="price">السعر — تلقائي من الأسعار</MenuItem>
-              <MenuItem value="warehouse">المستودعات — تلقائي من المستودعات</MenuItem>
+              <MenuItem value="warehouse">المخازن — تلقائي من المخازن</MenuItem>
               <MenuItem value="availability">التوفر — تلقائي من المخزون</MenuItem>
             </TextField>
 
             {filterForm.sourceType === 'attribute' ? (
               <TextField
                 select
-                label="اختر الخاصية"
+                label="اختر المواصفة"
                 value={filterForm.sourceAttributeId}
                 onChange={(event) => {
                   const attr = attributes.find((a) => a.id === event.target.value);
@@ -536,7 +536,7 @@ export function FiltersPanel({ request }: FiltersPanelProps) {
         {selectedFilterId ? (
           isSmartFilter ? (
             <Alert severity="info">
-              هذا فلتر تلقائي ({sourceTypeDescriptions[selectedFilter?.sourceType ?? 'manual']}).
+              هذا فلتر مواصفات تلقائي ({sourceTypeDescriptions[selectedFilter?.sourceType ?? 'manual']}).
               القيم تسحب تلقائياً من المصدر ولا تحتاج إدخال يدوي.
             </Alert>
           ) : (
@@ -546,7 +546,7 @@ export function FiltersPanel({ request }: FiltersPanelProps) {
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <TuneIcon color="primary" />
                     <Typography variant="h6" fontWeight={800}>
-                      قيم الفلتر
+                      قيم فلتر مواصفات
                     </Typography>
                   </Box>
                   {selectedFilter?.type !== 'range' ? (
@@ -557,7 +557,7 @@ export function FiltersPanel({ request }: FiltersPanelProps) {
                 </Box>
 
                 {selectedFilter?.type === 'range' ? (
-                  <Alert severity="info">فلتر النطاق رقمي ولا يحتوي قيماً ثابتة.</Alert>
+                  <Alert severity="info">فلتر مواصفات النطاق رقمي ولا يحتوي قيماً ثابتة.</Alert>
                 ) : isValueFormVisible ? (
                   <Box sx={{ display: 'grid', gap: 2, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
                     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
@@ -648,7 +648,7 @@ export function FiltersPanel({ request }: FiltersPanelProps) {
                           {(selectedFilter?.values ?? []).length === 0 ? (
                             <TableRow>
                               <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
-                                <Typography color="text.secondary">لا توجد قيم لهذا الفلتر بعد.</Typography>
+                                <Typography color="text.secondary">لا توجد قيم لهذا فلتر مواصفات بعد.</Typography>
                               </TableCell>
                             </TableRow>
                           ) : (
@@ -718,11 +718,11 @@ export function FiltersPanel({ request }: FiltersPanelProps) {
             </Paper>
           )
         ) : (
-          <Alert severity="info">احفظ الفلتر أولاً حتى تتمكن من إدارة قيمه.</Alert>
+          <Alert severity="info">احفظ فلتر مواصفات أولاً حتى تتمكن من إدارة قيمه.</Alert>
         )}
         </Box>
         <FloatingActionButton
-          label={actionLoading ? 'جاري الحفظ...' : 'حفظ الفلتر'}
+          label={actionLoading ? 'جاري الحفظ...' : 'حفظ فلتر مواصفات'}
           icon={<AddIcon />}
           onClick={() => saveFilter().catch(() => undefined)}
           disabled={actionLoading}
@@ -739,11 +739,11 @@ export function FiltersPanel({ request }: FiltersPanelProps) {
             إدارة فلاتر المنتجات
           </Typography>
           <Typography color="text.secondary">
-            لا تحتاج لإعادة كتابة البراندات أو الألوان أو التخزين. اختر مصدر الفلتر فقط وسيتم سحب القيم تلقائياً.
+            لا تحتاج لإعادة كتابة البراندات أو الألوان أو التخزين. اختر مصدر فلتر مواصفات فقط وسيتم سحب القيم تلقائياً.
           </Typography>
         </Box>
         <Button startIcon={<AddIcon />} variant="contained" onClick={prepareNewFilter}>
-          فلتر جديد
+          فلتر مواصفات جديد
         </Button>
       </Box>
 
@@ -752,17 +752,17 @@ export function FiltersPanel({ request }: FiltersPanelProps) {
       {/* Section 1: Automatic Filters */}
       <Paper elevation={0} sx={{ p: 3, border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
         <Typography variant="h6" fontWeight={800} gutterBottom>
-          الفلاتر التلقائية
+          فلاتر المواصفات التلقائية
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          فلاتر تسحب بياناتها تلقائياً من البراندات، الأسعار، المستودعات، أو المخزون.
+          فلاتر تسحب بياناتها تلقائياً من البراندات، الأسعار، المخازن، أو المخزون.
         </Typography>
         <DataTableWrapper>
           <TableContainer>
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>الفلتر</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>فلتر مواصفات</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>المصدر</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>النوع</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>الحالة</TableCell>
@@ -826,20 +826,20 @@ export function FiltersPanel({ request }: FiltersPanelProps) {
       {/* Section 2: Attribute Filters */}
       <Paper elevation={0} sx={{ p: 3, border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
         <Typography variant="h6" fontWeight={800} gutterBottom>
-          فلاتر من الخصائص
+          فلاتر من المواصفات
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          حوّل أي خاصية (اللون، التخزين، RAM...) إلى فلتر تلقائي.
+          حوّل أي مواصفة (اللون، التخزين، RAM...) إلى فلتر مواصفات تلقائي.
         </Typography>
         <DataTableWrapper>
           <TableContainer>
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>الخاصية</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>المواصفة</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>النوع</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>القيم</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>مفعلة كفلتر</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>مفعلة كفلتر مواصفات</TableCell>
                   <TableCell align="left" />
                 </TableRow>
               </TableHead>
@@ -848,7 +848,7 @@ export function FiltersPanel({ request }: FiltersPanelProps) {
                   <TableRow>
                     <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
                       <Typography color="text.secondary">
-                        {loading ? 'جاري التحميل...' : 'لا توجد خصائص بعد. أنشئ خصائص أولاً من قسم الخصائص.'}
+                        {loading ? 'جاري التحميل...' : 'لا توجد مواصفات بعد. أنشئ مواصفات أولاً من قسم المواصفات.'}
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -903,7 +903,7 @@ export function FiltersPanel({ request }: FiltersPanelProps) {
                               onClick={() => enableAttributeAsFilter(attr).catch(() => undefined)}
                               disabled={actionLoading}
                             >
-                              تفعيل كفلتر
+                              تفعيل كفلتر مواصفات
                             </Button>
                           )}
                         </TableCell>
@@ -930,7 +930,7 @@ export function FiltersPanel({ request }: FiltersPanelProps) {
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>الفلتر</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>فلتر مواصفات</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>النوع</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>القيم</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>الترتيب</TableCell>
@@ -994,7 +994,7 @@ export function FiltersPanel({ request }: FiltersPanelProps) {
         </DataTableWrapper>
       </Paper>
       <FloatingActionButton
-        label="إنشاء فلتر"
+        label="إنشاء فلتر مواصفات"
         icon={<AddIcon />}
         onClick={prepareNewFilter}
         disabled={loading || actionLoading}

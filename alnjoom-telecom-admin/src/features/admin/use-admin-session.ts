@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { readStoredSession, writeStoredSession } from './session-storage';
-import type { MerchantSession } from './types';
+import type { AdminSession } from './types';
 
-export function useMerchantSession() {
-  const [session, setSession] = useState<MerchantSession | null>(() => readStoredSession());
+export function useAdminSession() {
+  const [session, setSession] = useState<AdminSession | null>(() => readStoredSession());
 
   useEffect(() => {
     writeStoredSession(session);

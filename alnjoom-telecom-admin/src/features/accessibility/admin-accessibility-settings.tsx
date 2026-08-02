@@ -14,9 +14,14 @@ import {
 } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { fetchWithCsrfRetry } from '../../lib/csrf';
-
-const STORAGE_KEY = 'ecommerce_core.merchant.accessibility.preferences';
-const SESSION_STORAGE_KEY = 'merchant.session.v1';
+import {
+  ADMIN_ACCESSIBILITY_EVENT,
+  ADMIN_STORAGE_KEYS,
+  LEGACY_ADMIN_ACCESSIBILITY_EVENT,
+  LEGACY_ADMIN_STORAGE_KEYS,
+  migrateStorageValue,
+} from '../../compatibility/legacy-admin-compat';
+import { readStoredSession } from '../admin/session-storage';
 
 interface AccessibilityPreferences {
   highContrast: boolean;
@@ -34,13 +39,11 @@ const DEFAULT_PREFERENCES: AccessibilityPreferences = {
   strongFocusRing: true,
 };
 
-const OPEN_ACCESSIBILITY_SETTINGS_EVENT = 'ecommerce_core:open-accessibility-settings';
-
-export function openMerchantAccessibilitySettings(): void {
-  window.dispatchEvent(new Event(OPEN_ACCESSIBILITY_SETTINGS_EVENT));
+export function openAdminAccessibilitySettings(): void {
+  window.dispatchEvent(new Event(ADMIN_ACCESSIBILITY_EVENT));
 }
 
-export function MerchantAccessibilitySettings() {
+export function AdminAccessibilitySettings() {
   const [open, setOpen] = useState(false);
   const [preferences, setPreferences] = useState<AccessibilityPreferences>(DEFAULT_PREFERENCES);
   const [syncMessage, setSyncMessage] = useState('');
@@ -48,9 +51,11 @@ export function MerchantAccessibilitySettings() {
 
   useEffect(() => {
     const handleOpen = () => setOpen(true);
-    window.addEventListener(OPEN_ACCESSIBILITY_SETTINGS_EVENT, handleOpen);
+    window.addEventListener(ADMIN_ACCESSIBILITY_EVENT, handleOpen);
+    window.addEventListener(LEGACY_ADMIN_ACCESSIBILITY_EVENT, handleOpen);
     return () => {
-      window.removeEventListener(OPEN_ACCESSIBILITY_SETTINGS_EVENT, handleOpen);
+      window.removeEventListener(ADMIN_ACCESSIBILITY_EVENT, handleOpen);
+      window.removeEventListener(LEGACY_ADMIN_ACCESSIBILITY_EVENT, handleOpen);
     };
   }, []);
 
@@ -63,7 +68,7 @@ export function MerchantAccessibilitySettings() {
         setPreferences(fallback);
       }
 
-      const session = readMerchantSession();
+      const session = readAccessibilitySession();
       if (!session) {
         hasLoadedRef.current = true;
         setSyncMessage('يتم حفظ تفضيلات الوصول محليا حتى تسجل الدخول.');
@@ -105,13 +110,16 @@ export function MerchantAccessibilitySettings() {
 
   useEffect(() => {
     applyPreferenceClasses(preferences);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
+    window.localStorage.setItem(
+      ADMIN_STORAGE_KEYS.accessibilityPreferences,
+      JSON.stringify(preferences),
+    );
   }, [preferences]);
 
   useEffect(() => {
     if (!hasLoadedRef.current) return;
 
-    const session = readMerchantSession();
+    const session = readAccessibilitySession();
     if (!session) {
       setSyncMessage('يتم حفظ تفضيلات الوصول محليا حتى تسجل الدخول.');
       return;
@@ -162,15 +170,15 @@ export function MerchantAccessibilitySettings() {
       <Dialog
         open={open}
         onClose={() => setOpen(false)}
-        aria-labelledby="merchant-a11y-title"
-        aria-describedby="merchant-a11y-description"
+        aria-labelledby="admin-a11y-title"
+        aria-describedby="admin-a11y-description"
         fullWidth
         maxWidth="xs"
       >
-        <DialogTitle id="merchant-a11y-title">إعدادات الوصول</DialogTitle>
+        <DialogTitle id="admin-a11y-title">إعدادات الوصول</DialogTitle>
         <DialogContent sx={{ display: 'grid', gap: 1.5, pt: 1 }}>
-          <Box id="merchant-a11y-description" sx={{ color: 'text.secondary', fontSize: '0.86rem' }}>
-            خصص تجربة لوحة التاجر واحفظها في حسابك عند توفر الاتصال.
+          <Box id="admin-a11y-description" sx={{ color: 'text.secondary', fontSize: '0.86rem' }}>
+            خصص تجربة لوحة إدارة نجوم تليكوم واحفظها في حسابك عند توفر الاتصال.
           </Box>
           <FormControlLabel
             control={
@@ -182,9 +190,9 @@ export function MerchantAccessibilitySettings() {
             label="تباين عال"
           />
           <FormControl fullWidth size="small">
-            <InputLabel id="merchant-font-scale-label">حجم الخط</InputLabel>
+            <InputLabel id="admin-font-scale-label">حجم الخط</InputLabel>
             <Select
-              labelId="merchant-font-scale-label"
+              labelId="admin-font-scale-label"
               label="حجم الخط"
               value={preferences.fontScale}
               onChange={(event) =>
@@ -251,26 +259,41 @@ function normalizePreferences(input: Partial<AccessibilityPreferences> | null | 
 
 function readStoredPreferences(): AccessibilityPreferences | null {
   try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    return stored ? normalizePreferences(JSON.parse(stored) as Partial<AccessibilityPreferences>) : null;
+    return migrateStorageValue({
+      storage: window.localStorage,
+      currentKey: ADMIN_STORAGE_KEYS.accessibilityPreferences,
+      legacyKey: LEGACY_ADMIN_STORAGE_KEYS.accessibilityPreferences,
+      parse: parseStoredPreferences,
+    });
   } catch {
     return null;
   }
 }
 
-function readMerchantSession(): { apiBaseUrl: string; accessToken: string } | null {
+function parseStoredPreferences(raw: string): AccessibilityPreferences | null {
   try {
-    const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as { apiBaseUrl?: string; accessToken?: string };
-    if (!parsed.apiBaseUrl || !parsed.accessToken) return null;
-    return {
-      apiBaseUrl: parsed.apiBaseUrl.replace(/\/+$/, ''),
-      accessToken: parsed.accessToken,
-    };
+    const parsed = JSON.parse(raw) as Partial<AccessibilityPreferences> | null;
+    if (
+      !parsed ||
+      typeof parsed.highContrast !== 'boolean' ||
+      typeof parsed.reducedMotion !== 'boolean' ||
+      typeof parsed.underlineLinks !== 'boolean' ||
+      typeof parsed.strongFocusRing !== 'boolean' ||
+      !['100', '115', '130', '150'].includes(String(parsed.fontScale))
+    ) {
+      return null;
+    }
+    return normalizePreferences(parsed);
   } catch {
     return null;
   }
+}
+
+function readAccessibilitySession(): { apiBaseUrl: string; accessToken: string } | null {
+  const session = readStoredSession();
+  return session
+    ? { apiBaseUrl: session.apiBaseUrl.replace(/\/+$/, ''), accessToken: session.accessToken }
+    : null;
 }
 
 function applyPreferenceClasses(preferences: AccessibilityPreferences): void {

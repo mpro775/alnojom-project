@@ -11,12 +11,12 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import type { MerchantRequester } from '../../merchant-dashboard.types';
+import type { AdminRequester } from '../../admin-dashboard.types';
 import type { StoreCurrency, StoreSettings, StoreSettingsOptions } from '../../types';
-import { AppPage, EcommerceCoreLoader, PageHeader } from '../../components/ui';
+import { AppPage, AlnjoomLoader, PageHeader } from '../../components/ui';
 
 interface StoreSettingsPanelProps {
-  request: MerchantRequester;
+  request: AdminRequester;
   onSettingsUpdated?: (settings: StoreSettings) => void;
 }
 
@@ -183,7 +183,7 @@ export function StoreSettingsPanel({ request, onSettingsUpdated }: StoreSettings
   }
 
   if (loading) {
-    return <EcommerceCoreLoader label="جاري تحميل إعدادات المتجر..." sx={{ minHeight: 320 }} />;
+    return <AlnjoomLoader label="جاري تحميل إعدادات المتجر..." sx={{ minHeight: 320 }} />;
   }
 
   return (

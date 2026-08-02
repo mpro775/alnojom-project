@@ -15,12 +15,12 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import type { MerchantRequester } from '../../merchant-dashboard.types';
+import type { AdminRequester } from '../../admin-dashboard.types';
 import type { LoyaltyLedgerEntry, LoyaltyRule, LoyaltySettings, LoyaltyWallet } from '../../types';
 import { AppPage, PageHeader, SectionCard } from '../../components/ui';
 
 interface LoyaltyPanelProps {
-  request: MerchantRequester;
+  request: AdminRequester;
 }
 
 export function LoyaltyPanel({ request }: LoyaltyPanelProps) {

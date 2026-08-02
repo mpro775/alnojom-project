@@ -19,16 +19,14 @@ import {
   alpha,
   useTheme,
 } from '@mui/material';
-import { MerchantLogin } from '../merchant/merchant-login';
-import type { MerchantSession } from '../merchant/types';
+import { AdminLogin } from '../admin/admin-login';
+import type { AdminSession } from '../admin/types';
 import { ADMIN_TOKENS } from '../../theme/tokens';
 
-interface MerchantLoginPageProps {
-  onLoggedIn: (session: MerchantSession) => void;
+interface AdminLoginPageProps {
+  onLoggedIn: (session: AdminSession) => void;
   onBackHome: () => void;
 }
-
-const ecommerce_core_ICON_SRC = '/brand/ecommerce_core-icon.png';
 
 const storeSignals = [
   { label: 'طلبات اليوم', value: '128', delta: '+18%', icon: LocalMallIcon, tone: 'success' },
@@ -43,10 +41,10 @@ const activityRows = [
   { title: 'تحديث مخزون تلقائي', meta: 'منتجان بحاجة لمراجعة', progress: 46 },
 ] as const;
 
-export function MerchantLoginPage({
+export function AdminLoginPage({
   onLoggedIn,
   onBackHome,
-}: MerchantLoginPageProps) {
+}: AdminLoginPageProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const primaryTint = alpha(theme.palette.primary.main, isDark ? 0.2 : 0.12);
@@ -170,16 +168,11 @@ export function MerchantLoginPage({
                   width: 76,
                 }}
               >
-                <Box
-                  component="img"
-                  src={ecommerce_core_ICON_SRC}
-                  alt="Ecommerce Core"
-                  sx={{ height: 52, objectFit: 'contain', width: 52 }}
-                />
+                <LocalMallIcon aria-label="Alnjoom Telecom" sx={{ fontSize: 42 }} />
               </Box>
               <Chip
                 icon={<VerifiedUserIcon fontSize="small" />}
-                label="دخول آمن للوحة التاجر"
+                label="دخول آمن للوحة إدارة نجوم تليكوم"
                 color="primary"
                 variant="outlined"
                 sx={{
@@ -205,7 +198,7 @@ export function MerchantLoginPage({
               </Typography>
             </Stack>
 
-            <MerchantLogin onLoggedIn={onLoggedIn} />
+            <AdminLogin onLoggedIn={onLoggedIn} />
           </Stack>
         </Paper>
 
@@ -259,7 +252,7 @@ export function MerchantLoginPage({
                 }}
               />
               <Typography variant="subtitle2" sx={{ color: 'text.secondary', fontWeight: 900 }}>
-                متجرك يعمل الآن
+                متجر نجوم تليكوم يعمل الآن
               </Typography>
             </Stack>
 
@@ -286,7 +279,7 @@ export function MerchantLoginPage({
                   maxWidth: 560,
                 }}
               >
-                صممنا الدخول ليكون بداية واضحة: أمان ظاهر، مؤشرات مختصرة، ومساحة عمل تشبه إيقاع التاجر اليومي.
+                صممنا الدخول ليكون بداية واضحة: أمان ظاهر، مؤشرات مختصرة، ومساحة عمل تناسب إيقاع فريق المتجر اليومي.
               </Typography>
             </Box>
 
@@ -384,6 +377,7 @@ export function MerchantLoginPage({
                     <LinearProgress
                       variant="determinate"
                       value={row.progress}
+                      aria-label={row.title}
                       sx={{
                         bgcolor: alpha(theme.palette.primary.main, isDark ? 0.18 : 0.08),
                         borderRadius: 999,

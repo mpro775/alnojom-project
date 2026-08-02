@@ -50,8 +50,8 @@ export class EmailService {
 
   async sendOtpEmail(input: OtpEmailInput): Promise<void> {
     const mode = this.configService.get<string>('EMAIL_DELIVERY_MODE', 'log');
-    const from = this.configService.get<string>('EMAIL_FROM', 'no-reply@ecommerce_core.store');
-    const subject = 'رمز التحقق لتفعيل حسابك في النظام ستور';
+    const from = this.configService.get<string>('EMAIL_FROM', 'no-reply@alnjoom.invalid');
+    const subject = 'رمز التحقق لتفعيل حسابك في متجر نجوم تليكوم';
     const text = [
       `مرحباً ${input.fullName},`,
       '',
@@ -88,7 +88,7 @@ export class EmailService {
 
   async sendBackInStockAlert(input: BackInStockEmailInput): Promise<void> {
     const mode = this.configService.get<string>('EMAIL_DELIVERY_MODE', 'log');
-    const from = this.configService.get<string>('EMAIL_FROM', 'no-reply@ecommerce_core.store');
+    const from = this.configService.get<string>('EMAIL_FROM', 'no-reply@alnjoom.invalid');
     const subject = 'Product back in stock';
     const text = [
       'A product you asked about is available again.',
@@ -126,12 +126,12 @@ export class EmailService {
 
   async sendStaffInvite(input: StaffInviteEmailInput): Promise<void> {
     const mode = this.configService.get<string>('EMAIL_DELIVERY_MODE', 'log');
-    const from = this.configService.get<string>('EMAIL_FROM', 'no-reply@ecommerce_core.store');
+    const from = this.configService.get<string>('EMAIL_FROM', 'no-reply@alnjoom.invalid');
     const subject = `Invitation to join ${input.storeName}`;
     const text = [
       `Hello ${input.fullName},`,
       '',
-      `You have been invited to join ${input.storeName} on Ecommerce Core Store.`,
+      `You have been invited to join ${input.storeName} on Alnjoom Telecom Store.`,
       `Accept the invitation: ${input.inviteUrl}`,
       `This invitation expires at: ${input.expiresAt.toISOString()}`,
       '',
@@ -140,7 +140,7 @@ export class EmailService {
     const html = `
       <div style="font-family: Arial, sans-serif; color: #111; line-height: 1.6;">
         <p>Hello ${this.escapeHtml(input.fullName)},</p>
-        <p>You have been invited to join <strong>${this.escapeHtml(input.storeName)}</strong> on Ecommerce Core Store.</p>
+        <p>You have been invited to join <strong>${this.escapeHtml(input.storeName)}</strong> on Alnjoom Telecom Store.</p>
         <p><a href="${this.escapeHtml(input.inviteUrl)}">Accept invitation</a></p>
         <p style="font-size:12px;color:#666;">This invitation expires at: ${this.escapeHtml(input.expiresAt.toISOString())}</p>
         <p style="font-size:12px;color:#666;">If you were not expecting this invitation, you can ignore this email.</p>
@@ -167,7 +167,7 @@ export class EmailService {
 
   async sendAbandonedCartRecovery(input: AbandonedCartRecoveryEmailInput): Promise<void> {
     const mode = this.configService.get<string>('EMAIL_DELIVERY_MODE', 'log');
-    const from = this.configService.get<string>('EMAIL_FROM', 'no-reply@ecommerce_core.store');
+    const from = this.configService.get<string>('EMAIL_FROM', 'no-reply@alnjoom.invalid');
     const subject = `لا يزال هناك منتجات بانتظارك في ${input.storeName}`;
     const text = [
       'مرحباً،',

@@ -13,9 +13,9 @@ import type {
   AnalyticsSourceAttribution,
   AnalyticsStockoutRisk,
 } from '../types';
-import type { MerchantRequester } from '../merchant-dashboard.types';
+import type { AdminRequester } from '../admin-dashboard.types';
 
-interface MerchantOverviewState {
+interface AdminOverviewState {
   overview: AnalyticsOverview | null;
   fulfillmentSla: AnalyticsFulfillmentSla | null;
   paymentsPerformance: AnalyticsPaymentsPerformance | null;
@@ -30,19 +30,19 @@ interface MerchantOverviewState {
   anomalyReport: AnalyticsAnomalyReport | null;
 }
 
-interface MerchantOverviewLoading {
+interface AdminOverviewLoading {
   core: boolean;
   commerce: boolean;
   quality: boolean;
 }
 
-interface MerchantOverviewErrors {
+interface AdminOverviewErrors {
   core: string;
   commerce: string;
   quality: string;
 }
 
-const initialState: MerchantOverviewState = {
+const initialState: AdminOverviewState = {
   overview: null,
   fulfillmentSla: null,
   paymentsPerformance: null,
@@ -57,22 +57,22 @@ const initialState: MerchantOverviewState = {
   anomalyReport: null,
 };
 
-const initialLoading: MerchantOverviewLoading = {
+const initialLoading: AdminOverviewLoading = {
   core: true,
   commerce: true,
   quality: true,
 };
 
-const initialErrors: MerchantOverviewErrors = {
+const initialErrors: AdminOverviewErrors = {
   core: '',
   commerce: '',
   quality: '',
 };
 
-export function useMerchantOverviewData(request: MerchantRequester) {
-  const [state, setState] = useState<MerchantOverviewState>(initialState);
-  const [loading, setLoading] = useState<MerchantOverviewLoading>(initialLoading);
-  const [errors, setErrors] = useState<MerchantOverviewErrors>(initialErrors);
+export function useAdminOverviewData(request: AdminRequester) {
+  const [state, setState] = useState<AdminOverviewState>(initialState);
+  const [loading, setLoading] = useState<AdminOverviewLoading>(initialLoading);
+  const [errors, setErrors] = useState<AdminOverviewErrors>(initialErrors);
 
   useEffect(() => {
     let isMounted = true;

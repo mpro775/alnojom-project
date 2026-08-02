@@ -1,4 +1,4 @@
-export type MerchantNotificationCategory =
+export type AdminNotificationCategory =
   | 'orders'
   | 'payments'
   | 'inventory'
@@ -8,24 +8,24 @@ export type MerchantNotificationCategory =
   | 'analytics'
   | 'system';
 
-export type MerchantNotificationSeverity = 'info' | 'success' | 'warning' | 'critical';
-export type MerchantNotificationRecipientType = 'store' | 'store_user' | 'customer';
-export type MerchantNotificationFrequency = 'instant' | 'daily_digest' | 'mute';
+export type AdminNotificationSeverity = 'info' | 'success' | 'warning' | 'critical';
+export type AdminNotificationRecipientType = 'store' | 'store_user' | 'customer';
+export type AdminNotificationFrequency = 'instant' | 'daily_digest' | 'mute';
 
-export interface MerchantNotificationEventDefinition {
+export interface AdminNotificationEventDefinition {
   eventType: string;
-  category: MerchantNotificationCategory;
-  severity: MerchantNotificationSeverity;
-  recipientType: MerchantNotificationRecipientType;
+  category: AdminNotificationCategory;
+  severity: AdminNotificationSeverity;
+  recipientType: AdminNotificationRecipientType;
   title: string;
   body: string;
   actionUrl?: string;
-  defaultFrequency: MerchantNotificationFrequency;
+  defaultFrequency: AdminNotificationFrequency;
   isPersistent: boolean;
   dedupeKey?: string;
 }
 
-type RegistryDefinitionInput = Omit<MerchantNotificationEventDefinition, 'eventType'>;
+type RegistryDefinitionInput = Omit<AdminNotificationEventDefinition, 'eventType'>;
 
 function defineRegistry<T extends Record<string, RegistryDefinitionInput>>(
   events: T,
@@ -38,14 +38,14 @@ function defineRegistry<T extends Record<string, RegistryDefinitionInput>>(
   ) as { [K in keyof T]: T[K] & { eventType: K & string } };
 }
 
-export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
+export const ADMIN_NOTIFICATION_EVENTS = defineRegistry({
   'order.created': {
     category: 'orders',
     severity: 'info',
     recipientType: 'store',
     title: 'طلب جديد',
     body: 'وصل طلب جديد {{orderCode}} بقيمة {{total}} {{currencyCode}} من العميل {{customerName}}.',
-    actionUrl: '/merchant?tab=orders&orderId={{orderId}}',
+    actionUrl: '/admin?tab=orders&orderId={{orderId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'order.created:{{orderId}}',
@@ -56,7 +56,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'تم تحديث طلب',
     body: 'تم تحديث الطلب {{orderCode}}.',
-    actionUrl: '/merchant?tab=orders&orderId={{orderId}}',
+    actionUrl: '/admin?tab=orders&orderId={{orderId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'order.updated:{{orderId}}',
@@ -67,7 +67,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'تغيرت حالة الطلب',
     body: 'تغيرت حالة الطلب {{orderCode}} من {{from}} إلى {{to}}.',
-    actionUrl: '/merchant?tab=orders&orderId={{orderId}}',
+    actionUrl: '/admin?tab=orders&orderId={{orderId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'order.status.changed:{{orderId}}:{{to}}',
@@ -78,7 +78,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'تم إلغاء طلب',
     body: 'تم إلغاء الطلب {{orderCode}}.',
-    actionUrl: '/merchant?tab=orders&orderId={{orderId}}',
+    actionUrl: '/admin?tab=orders&orderId={{orderId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'order.cancelled:{{orderId}}',
@@ -89,7 +89,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'تم دفع الطلب',
     body: 'تم تأكيد دفع الطلب {{orderCode}}.',
-    actionUrl: '/merchant?tab=orders&orderId={{orderId}}',
+    actionUrl: '/admin?tab=orders&orderId={{orderId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'order.paid:{{orderId}}',
@@ -100,7 +100,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'الطلب جاهز للتجهيز',
     body: 'تم تأكيد الدفع للطلب {{orderCode}} وأصبح جاهزًا للتجهيز.',
-    actionUrl: '/merchant?tab=orders&orderId={{orderId}}',
+    actionUrl: '/admin?tab=orders&orderId={{orderId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'order.ready_to_fulfill:{{orderId}}',
@@ -111,7 +111,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'إيصال دفع جديد',
     body: 'تم رفع إيصال دفع للطلب {{orderCode}} ويحتاج مراجعة.',
-    actionUrl: '/merchant?tab=payments&paymentId={{paymentId}}',
+    actionUrl: '/admin?tab=payments&paymentId={{paymentId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'payment.receipt_uploaded:{{paymentId}}',
@@ -122,7 +122,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'تغيرت حالة الدفع',
     body: 'تغيرت حالة دفع الطلب {{orderCode}} من {{from}} إلى {{to}}.',
-    actionUrl: '/merchant?tab=payments&paymentId={{paymentId}}',
+    actionUrl: '/admin?tab=payments&paymentId={{paymentId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'payment.status_changed:{{paymentId}}:{{to}}',
@@ -133,7 +133,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'تم تأكيد الدفع',
     body: 'تم تأكيد دفع الطلب {{orderCode}}.',
-    actionUrl: '/merchant?tab=payments&paymentId={{paymentId}}',
+    actionUrl: '/admin?tab=payments&paymentId={{paymentId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'payment.approved:{{paymentId}}',
@@ -144,7 +144,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'تم رفض إيصال الدفع',
     body: 'تم رفض إيصال الدفع للطلب {{orderCode}}. يرجى مراجعة السبب.',
-    actionUrl: '/merchant?tab=payments&paymentId={{paymentId}}',
+    actionUrl: '/admin?tab=payments&paymentId={{paymentId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'payment.rejected:{{paymentId}}',
@@ -155,7 +155,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'رقم مرجع مكرر',
     body: 'رقم المرجع المستخدم في الطلب {{orderCode}} موجود في عملية دفع أخرى.',
-    actionUrl: '/merchant?tab=payments&paymentId={{paymentId}}',
+    actionUrl: '/admin?tab=payments&paymentId={{paymentId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'payment.reference_duplicate:{{storeId}}:{{referenceNumber}}',
@@ -166,7 +166,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'طلب بانتظار إيصال الدفع',
     body: 'الطلب {{orderCode}} لم يتم رفع إيصال دفع له حتى الآن.',
-    actionUrl: '/merchant?tab=payments&paymentId={{paymentId}}',
+    actionUrl: '/admin?tab=payments&paymentId={{paymentId}}',
     defaultFrequency: 'daily_digest',
     isPersistent: true,
     dedupeKey: 'payment.receipt_missing_after_order:{{paymentId}}',
@@ -177,7 +177,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'المخزون منخفض',
     body: 'المنتج {{productTitle}} وصل إلى {{currentStock}} فقط.',
-    actionUrl: '/merchant?tab=inventory&variantId={{variantId}}',
+    actionUrl: '/admin?tab=inventory&variantId={{variantId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'inventory.low_stock:{{variantId}}',
@@ -188,7 +188,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'تم إرسال تنبيهات توفر المخزون',
     body: 'تم إرسال {{sentCount}} تنبيه توفر مخزون، وفشل {{failedCount}}.',
-    actionUrl: '/merchant?tab=restockAlerts',
+    actionUrl: '/admin?tab=restockAlerts',
     defaultFrequency: 'daily_digest',
     isPersistent: true,
     dedupeKey: 'inventory.back_in_stock:{{variantId}}',
@@ -199,7 +199,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'نفد المخزون',
     body: 'المنتج {{productTitle}} أصبح غير متوفر.',
-    actionUrl: '/merchant?tab=inventory&variantId={{variantId}}',
+    actionUrl: '/admin?tab=inventory&variantId={{variantId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'inventory.out_of_stock:{{variantId}}',
@@ -210,7 +210,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'تمت استعادة المخزون',
     body: 'عاد المنتج {{productTitle}} إلى المخزون.',
-    actionUrl: '/merchant?tab=inventory&variantId={{variantId}}',
+    actionUrl: '/admin?tab=inventory&variantId={{variantId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'inventory.stock_restored:{{variantId}}',
@@ -221,7 +221,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'تعارض في المخزون',
     body: 'تم اكتشاف تعارض بين مخزون المنتج والمستودعات للمنتج {{productTitle}}.',
-    actionUrl: '/merchant?tab=inventory&variantId={{variantId}}',
+    actionUrl: '/admin?tab=inventory&variantId={{variantId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'inventory.stock_conflict_detected:{{variantId}}',
@@ -232,7 +232,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'فشل حجز المخزون',
     body: 'فشل حجز مخزون المنتج {{productTitle}} للطلب {{orderCode}}.',
-    actionUrl: '/merchant?tab=inventory&variantId={{variantId}}',
+    actionUrl: '/admin?tab=inventory&variantId={{variantId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'inventory.reservation_failed:{{variantId}}:{{orderId}}',
@@ -243,7 +243,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'اكتمل تحديث المخزون',
     body: 'اكتمل تحديث المخزون الجماعي بنجاح.',
-    actionUrl: '/merchant?tab=inventory',
+    actionUrl: '/admin?tab=inventory',
     defaultFrequency: 'daily_digest',
     isPersistent: true,
     dedupeKey: 'inventory.bulk_update_completed:{{batchId}}',
@@ -254,7 +254,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'إضافة منتج للسلة',
     body: 'أضيف المنتج {{productTitle}} إلى سلة عميل.',
-    actionUrl: '/merchant?tab=abandonedCarts&cartId={{cartId}}',
+    actionUrl: '/admin?tab=abandonedCarts&cartId={{cartId}}',
     defaultFrequency: 'mute',
     isPersistent: false,
     dedupeKey: 'cart.item_added:{{cartId}}:{{variantId}}',
@@ -265,7 +265,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'سلة عالية القيمة',
     body: 'عميل أضاف منتجات بقيمة {{cartTotal}} {{currencyCode}} إلى السلة.',
-    actionUrl: '/merchant?tab=abandonedCarts&cartId={{cartId}}',
+    actionUrl: '/admin?tab=abandonedCarts&cartId={{cartId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'cart.high_value_detected:{{cartId}}',
@@ -276,7 +276,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'نية شراء عالية',
     body: 'عميل أضاف {{itemsCount}} منتجات إلى السلة.',
-    actionUrl: '/merchant?tab=abandonedCarts&cartId={{cartId}}',
+    actionUrl: '/admin?tab=abandonedCarts&cartId={{cartId}}',
     defaultFrequency: 'daily_digest',
     isPersistent: true,
     dedupeKey: 'cart.strong_intent_detected:{{cartId}}',
@@ -287,7 +287,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'سلة مهجورة مهمة',
     body: 'عميل ترك سلة بقيمة {{cartTotal}} {{currencyCode}}.',
-    actionUrl: '/merchant?tab=abandonedCarts&cartId={{cartId}}',
+    actionUrl: '/admin?tab=abandonedCarts&cartId={{cartId}}',
     defaultFrequency: 'daily_digest',
     isPersistent: true,
     dedupeKey: 'cart.abandoned_detected:{{cartId}}',
@@ -298,7 +298,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'تم استرجاع سلة مهجورة',
     body: 'تحولت سلة مهجورة إلى طلب جديد {{orderCode}}.',
-    actionUrl: '/merchant?tab=orders&orderId={{orderId}}',
+    actionUrl: '/admin?tab=orders&orderId={{orderId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'cart.recovered:{{cartId}}:{{orderId}}',
@@ -309,7 +309,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'فشل إتمام الطلب',
     body: 'عميل حاول إتمام الطلب ولم تنجح العملية.',
-    actionUrl: '/merchant?tab=abandonedCarts&cartId={{cartId}}',
+    actionUrl: '/admin?tab=abandonedCarts&cartId={{cartId}}',
     defaultFrequency: 'daily_digest',
     isPersistent: true,
     dedupeKey: 'checkout.failed:{{cartId}}:{{reason}}',
@@ -320,7 +320,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'تذكرة دعم جديدة',
     body: '{{subject}}',
-    actionUrl: '/merchant?tab=supportTickets&ticketId={{ticketId}}',
+    actionUrl: '/admin?tab=supportTickets&ticketId={{ticketId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'support.ticket.created:{{ticketId}}',
@@ -331,7 +331,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'تحديث على تذكرة دعم',
     body: '{{subject}}',
-    actionUrl: '/merchant?tab=supportTickets&ticketId={{ticketId}}',
+    actionUrl: '/admin?tab=supportTickets&ticketId={{ticketId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'support.ticket.updated:{{ticketId}}:{{messageId}}',
@@ -342,7 +342,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store_user',
     title: 'تم إسناد تذكرة دعم',
     body: '{{subject}}',
-    actionUrl: '/merchant?tab=supportTickets&ticketId={{ticketId}}',
+    actionUrl: '/admin?tab=supportTickets&ticketId={{ticketId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'support.ticket.assigned:{{ticketId}}:{{assigneeId}}',
@@ -353,7 +353,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'تم تصعيد تذكرة دعم',
     body: '{{subject}}',
-    actionUrl: '/merchant?tab=supportTickets&ticketId={{ticketId}}',
+    actionUrl: '/admin?tab=supportTickets&ticketId={{ticketId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'support.ticket.escalated:{{ticketId}}',
@@ -364,7 +364,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'تجاوز اتفاقية مستوى الخدمة',
     body: 'تذكرة الدعم {{subject}} تجاوزت وقت الاستجابة المطلوب.',
-    actionUrl: '/merchant?tab=supportTickets&ticketId={{ticketId}}',
+    actionUrl: '/admin?tab=supportTickets&ticketId={{ticketId}}',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'support.ticket.sla_breached:{{ticketId}}',
@@ -375,7 +375,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'تنبيه تحليلي',
     body: '{{message}}',
-    actionUrl: '/merchant?tab=analytics',
+    actionUrl: '/admin?tab=analytics',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'analytics.anomaly_detected:{{storeId}}:{{anomalyType}}',
@@ -386,7 +386,7 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
     recipientType: 'store',
     title: 'فشل تسليم إشعار',
     body: '{{errorMessage}}',
-    actionUrl: '/merchant?tab=notificationsCenter',
+    actionUrl: '/admin?tab=notificationsCenter',
     defaultFrequency: 'instant',
     isPersistent: true,
     dedupeKey: 'notification.delivery.failed:{{eventType}}:{{attempts}}',
@@ -437,9 +437,9 @@ export const MERCHANT_NOTIFICATION_EVENTS = defineRegistry({
   },
 } satisfies Record<string, RegistryDefinitionInput>);
 
-export type MerchantNotificationEventType = keyof typeof MERCHANT_NOTIFICATION_EVENTS;
+export type AdminNotificationEventType = keyof typeof ADMIN_NOTIFICATION_EVENTS;
 
-export const MERCHANT_NOTIFICATION_CATEGORIES: MerchantNotificationCategory[] = [
+export const ADMIN_NOTIFICATION_CATEGORIES: AdminNotificationCategory[] = [
   'orders',
   'payments',
   'inventory',
@@ -450,19 +450,19 @@ export const MERCHANT_NOTIFICATION_CATEGORIES: MerchantNotificationCategory[] = 
   'system',
 ];
 
-export const MERCHANT_NOTIFICATION_SEVERITIES: MerchantNotificationSeverity[] = [
+export const ADMIN_NOTIFICATION_SEVERITIES: AdminNotificationSeverity[] = [
   'info',
   'success',
   'warning',
   'critical',
 ];
 
-export function getMerchantNotificationEvent(
+export function getAdminNotificationEvent(
   eventType: string,
-): MerchantNotificationEventDefinition | undefined {
-  return MERCHANT_NOTIFICATION_EVENTS[eventType as MerchantNotificationEventType];
+): AdminNotificationEventDefinition | undefined {
+  return ADMIN_NOTIFICATION_EVENTS[eventType as AdminNotificationEventType];
 }
 
-export function listMerchantNotificationEvents(): MerchantNotificationEventDefinition[] {
-  return Object.values(MERCHANT_NOTIFICATION_EVENTS);
+export function listAdminNotificationEvents(): AdminNotificationEventDefinition[] {
+  return Object.values(ADMIN_NOTIFICATION_EVENTS);
 }

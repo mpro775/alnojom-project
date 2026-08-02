@@ -35,9 +35,9 @@ import { AnalyticsShipmentsPanel } from './panels/analytics-shipments-panel';
 import { ReportsCustomersPanel } from './panels/reports-customers-panel';
 import { ReportsSalesPanel } from './panels/reports-sales-panel';
 import { ReportsInventoryPanel } from './panels/reports-inventory-panel';
-import type { MerchantPanelProps, MerchantTabKey } from './merchant-dashboard.types';
+import type { AdminPanelProps, AdminTabKey } from './admin-dashboard.types';
 
-const panelRenderers: Record<MerchantTabKey, (props: MerchantPanelProps) => ReactElement> = {
+const panelRenderers: Record<AdminTabKey, (props: AdminPanelProps) => ReactElement> = {
   overview: (props) => (
     <OverviewPanel
       session={props.session}
@@ -92,7 +92,7 @@ const panelRenderers: Record<MerchantTabKey, (props: MerchantPanelProps) => Reac
   staff: (props) => <StaffPanel request={props.request} />,
 };
 
-export function renderMerchantPanel(activeTab: MerchantTabKey, props: MerchantPanelProps): ReactElement | null {
+export function renderAdminPanel(activeTab: AdminTabKey, props: AdminPanelProps): ReactElement | null {
   const renderer = panelRenderers[activeTab];
   return renderer ? renderer(props) : null;
 }

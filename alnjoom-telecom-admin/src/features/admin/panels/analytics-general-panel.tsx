@@ -1,6 +1,6 @@
 import { Alert, Box, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import type { MerchantRequester } from '../merchant-dashboard.types';
+import type { AdminRequester } from '../admin-dashboard.types';
 import type { AnalyticsGeneral } from '../types';
 import { AppPage, PageHeader, StatCard } from '../components/ui';
 import { AnalyticsFiltersBar, AnalyticsLoadingState, buildAnalyticsQuery, useAnalyticsData, useAnalyticsFilters } from './analytics-common';
@@ -9,7 +9,7 @@ function money(value: number, currency: string): string {
   return `${value.toFixed(2)} ${currency}`;
 }
 
-export function AnalyticsGeneralPanel({ request }: { request: MerchantRequester }) {
+export function AnalyticsGeneralPanel({ request }: { request: AdminRequester }) {
   const [filters, setFilters] = useAnalyticsFilters();
   const query = buildAnalyticsQuery(filters);
   const { data, loading, error, refresh } = useAnalyticsData<AnalyticsGeneral>(

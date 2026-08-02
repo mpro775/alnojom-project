@@ -21,12 +21,12 @@ import {
   CircularProgress,
 } from '@mui/material';
 
-import type { MerchantRequester } from '../../merchant-dashboard.types';
+import type { AdminRequester } from '../../admin-dashboard.types';
 import type { WebhookDelivery, WebhookEndpoint } from '../../types';
 import { FloatingActionButton } from '../../components/ui';
 
 interface WebhooksPanelProps {
-  request: MerchantRequester;
+  request: AdminRequester;
 }
 
 const EVENT_OPTIONS = [

@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { useCallback, useMemo, useState } from 'react';
 import type { Attribute, Product, Warehouse } from '../../../../types';
-import type { MerchantRequester } from '../../../../merchant-dashboard.types';
+import type { AdminRequester } from '../../../../admin-dashboard.types';
 import type { GeneratedVariantDraft, ProductWarehouseAllocationRow, VariantForm } from './variant-types';
 import {
   calculateCombinationCount,
@@ -44,7 +44,7 @@ interface VariantBuilderDrawerProps {
   onSaveGeneratedVariants: () => Promise<void>;
   onDeleteVariant: (variantId: string) => Promise<void>;
   onRefresh: () => Promise<void>;
-  request: MerchantRequester;
+  request: AdminRequester;
 }
 
 type BuilderTab = 'generate' | 'edit';
@@ -120,7 +120,7 @@ export function VariantBuilderDrawer({
 
   function generateVariants(): void {
     if (selectedVariantAttributeIds.length === 0) {
-      setMessage({ text: 'اختر الخصائص التي تريد توليد المتغيرات منها أولاً.', type: 'error' });
+      setMessage({ text: 'اختر المواصفات التي تريد توليد خيارات المنتج منها أولاً.', type: 'error' });
       return;
     }
 
@@ -130,7 +130,7 @@ export function VariantBuilderDrawer({
     if (emptyAttribute) {
       const attr = attributes.find((a) => a.id === emptyAttribute);
       setMessage({
-        text: `اختر قيمة واحدة على الأقل للخاصية "${attr?.nameAr ?? attr?.name ?? ''}" قبل التوليد.`,
+        text: `اختر قيمة واحدة على الأقل للمواصفة "${attr?.nameAr ?? attr?.name ?? ''}" قبل التوليد.`,
         type: 'error',
       });
       return;
@@ -153,7 +153,7 @@ export function VariantBuilderDrawer({
       .filter((entry): entry is NonNullable<typeof entry> => entry !== null && entry.values.length > 0);
 
     if (selectedAttributes.length === 0) {
-      setMessage({ text: 'أضف قيماً للخصائص المختارة أولاً قبل توليد المتغيرات.', type: 'error' });
+      setMessage({ text: 'أضف قيماً للمواصفات المختارة أولاً قبل توليد خيارات المنتج.', type: 'error' });
       return;
     }
 
@@ -210,7 +210,7 @@ export function VariantBuilderDrawer({
 
     setGeneratedVariantDrafts(drafts);
     setMessage({
-      text: drafts.length > 0 ? `تم توليد ${drafts.length} متغير قابل للمراجعة.` : 'لا توجد تركيبات جديدة غير مضافة.',
+      text: drafts.length > 0 ? `تم توليد ${drafts.length} خيار منتج قابل للمراجعة.` : 'لا توجد تركيبات جديدة غير مضافة.',
       type: drafts.length > 0 ? 'success' : 'info',
     });
 
@@ -251,7 +251,7 @@ export function VariantBuilderDrawer({
 
   function applyBulkWarehouse(): void {
     if (!validateWarehouseAllocationRows(bulkWarehouseRows)) {
-      setMessage({ text: 'تحقق من صحة كميات المستودعات.', type: 'error' });
+      setMessage({ text: 'تحقق من صحة كميات المخازن.', type: 'error' });
       return;
     }
     setGeneratedVariantDrafts((drafts) =>
@@ -272,7 +272,7 @@ export function VariantBuilderDrawer({
       })),
     );
     setIsBulkWarehouseOpen(false);
-    setMessage({ text: 'تم تطبيق توزيع المستودعات على كل المتغيرات.', type: 'success' });
+    setMessage({ text: 'تم تطبيق توزيع المخازن على كل خيارات المنتج.', type: 'success' });
   }
 
   function updateDraftWarehouseRow(
@@ -328,10 +328,10 @@ export function VariantBuilderDrawer({
           <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
             <Box>
               <Typography variant="h5" fontWeight={900}>
-                توليد متغيرات جديدة
+                توليد خيارات منتج جديدة
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                اختر الخصائص والقيم ثم تولّد المتغيرات
+                اختر المواصفات والقيم ثم تولّد خيارات المنتج
               </Typography>
             </Box>
             <Button onClick={onClose} color="inherit" sx={{ fontWeight: 700 }}>
@@ -352,7 +352,7 @@ export function VariantBuilderDrawer({
               borderColor: activeTab === 'generate' ? 'primary.main' : 'transparent',
             }}
           >
-            توليد المتغيرات
+            توليد خيارات المنتج
           </Button>
           <Button
             onClick={() => setActiveTab('edit')}
@@ -365,7 +365,7 @@ export function VariantBuilderDrawer({
               borderColor: activeTab === 'edit' ? 'primary.main' : 'transparent',
             }}
           >
-            مراجعة المتغيرات المولدة ({generatedVariantDrafts.length})
+            مراجعة خيارات المنتج المولدة ({generatedVariantDrafts.length})
           </Button>
         </Stack>
 
@@ -374,7 +374,7 @@ export function VariantBuilderDrawer({
             <Stack spacing={3}>
               <Box>
                 <Typography variant="h6" fontWeight={900} sx={{ mb: 1 }}>
-                  1. اختيار الخصائص
+                  1. اختيار المواصفات
                 </Typography>
                 <VariantAttributePicker
                   attributes={attributes}
@@ -456,21 +456,21 @@ export function VariantBuilderDrawer({
                 </Typography>
                 {hasEnoughValues ? (
                   <Alert severity="info" sx={{ borderRadius: 2, mb: 2 }}>
-                    سيتم توليد <strong>{combinationCount}</strong> متغير.
+                    سيتم توليد <strong>{combinationCount}</strong> خيار منتج.
                   </Alert>
                 ) : (
                   <Alert severity="warning" sx={{ borderRadius: 2, mb: 2 }}>
-                    اختر خاصية واحدة على الأقل وقيمة واحدة لكل خاصية.
+                    اختر مواصفة واحدة على الأقل وقيمة واحدة لكل مواصفة.
                   </Alert>
                 )}
                 {combinationCount > 50 && hasEnoughValues ? (
                   <Alert severity="warning" sx={{ borderRadius: 2, mb: 2 }}>
-                    تنبيه: سيتم توليد عدد كبير من المتغيرات. يفضل استخدام التحرير الجماعي بعد التوليد.
+                    تنبيه: سيتم توليد عدد كبير من خيارات المنتج. يفضل استخدام التحرير الجماعي بعد التوليد.
                   </Alert>
                 ) : null}
                 {confirmLargeGeneration ? (
                   <Alert severity="error" sx={{ borderRadius: 2, mb: 2 }}>
-                    سيتم توليد {combinationCount} متغير. هل أنت متأكد؟
+                    سيتم توليد {combinationCount} خيار منتج. هل أنت متأكد؟
                     <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
                       <Button size="small" variant="contained" onClick={() => { setConfirmLargeGeneration(false); generateVariants(); }}>
                         نعم، تأكيد التوليد
@@ -488,7 +488,7 @@ export function VariantBuilderDrawer({
                   disabled={!hasEnoughValues || actionLoading}
                   sx={{ mt: 1 }}
                 >
-                  {actionLoading ? <CircularProgress size={24} /> : `توليد ${hasEnoughValues ? combinationCount : 0} متغير`}
+                  {actionLoading ? <CircularProgress size={24} /> : `توليد ${hasEnoughValues ? combinationCount : 0} خيار منتج`}
                 </Button>
               </Box>
             </Stack>
@@ -496,7 +496,7 @@ export function VariantBuilderDrawer({
             <Stack spacing={3}>
               {generatedVariantDrafts.length === 0 ? (
                 <Alert severity="info" sx={{ borderRadius: 2 }}>
-                  لا توجد متغيرات مولدة غير محفوظة. المتغيرات الحالية تُدار من جدول المتغيرات في صفحة المنتج.
+                  لا توجد خيارات منتج مولدة غير محفوظة. خيارات المنتج الحالية تُدار من جدول خيارات المنتج في صفحة المنتج.
                 </Alert>
               ) : (
                 <>
@@ -512,7 +512,7 @@ export function VariantBuilderDrawer({
                   />
                   <Divider />
                   <Button size="small" variant="outlined" onClick={openBulkWarehouse}>
-                    تطبيق توزيع مستودعات موحد على كل المتغيرات
+                    تطبيق توزيع مخازن موحد على كل خيارات المنتج
                   </Button>
                   <Divider />
                   <GeneratedVariantsEditor
@@ -537,7 +537,7 @@ export function VariantBuilderDrawer({
               onClick={() => onSaveGeneratedVariants().catch(() => undefined)}
               disabled={actionLoading || generatedVariantDrafts.length === 0 || !selectedProduct}
             >
-              {actionLoading ? 'جار الحفظ...' : `حفظ ${generatedVariantDrafts.length} متغير`}
+              {actionLoading ? 'جار الحفظ...' : `حفظ ${generatedVariantDrafts.length} خيار منتج`}
             </Button>
           </Stack>
         </Box>

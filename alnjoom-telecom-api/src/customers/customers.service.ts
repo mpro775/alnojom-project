@@ -356,7 +356,7 @@ export class CustomersService {
       fullName: customer.full_name,
       otpCode: token,
       expiresInMinutes: 60,
-      storeName: 'متجرك',
+      storeName: 'نجوم تليكوم',
     });
 
     await this.auditService.log({

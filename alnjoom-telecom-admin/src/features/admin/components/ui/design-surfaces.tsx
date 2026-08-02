@@ -2,9 +2,9 @@ import { Box, Paper, Stack, Typography } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import type { SxProps, Theme } from '@mui/material/styles';
 import type { ReactNode } from 'react';
-import { EcommerceCorePatternLayer } from '../../../../components/ecommerce_core-pattern-layer';
+import { AlnjoomPatternLayer } from '../../../../components/alnjoom-pattern-layer';
 import { ADMIN_TOKENS } from '../../../../theme/tokens';
-import { EcommerceCoreLoader } from './ecommerce_core-loader';
+import { AlnjoomLoader } from './alnjoom-loader';
 
 interface GlassHeroProps {
   children: ReactNode;
@@ -53,7 +53,7 @@ export function GlassHero({ children, aside }: GlassHeroProps) {
           : ADMIN_TOKENS.elevation.floating,
       }}
     >
-      <EcommerceCorePatternLayer
+      <AlnjoomPatternLayer
         variant="section"
         anchor="end"
         opacity={isDark ? 0.2 : 0.28}
@@ -155,7 +155,7 @@ export function GlassSectionCard({ title, eyebrow, icon, children }: GlassSectio
         },
       }}
     >
-      <EcommerceCorePatternLayer
+      <AlnjoomPatternLayer
         variant="card"
         anchor="end"
         opacity={isDark ? 0.16 : 0.2}
@@ -239,7 +239,7 @@ export function MetricCard({
         },
       }}
     >
-      <EcommerceCorePatternLayer
+      <AlnjoomPatternLayer
         variant="card"
         anchor="end"
         opacity={isDark ? 0.16 : 0.22}
@@ -352,7 +352,7 @@ export function SoftPanel({ children, sx }: { children: ReactNode; sx?: SxProps<
 export function LoadingBlock() {
   return (
     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 120 }}>
-      <EcommerceCoreLoader size="md" compact />
+      <AlnjoomLoader size="md" compact />
     </Box>
   );
 }

@@ -24,7 +24,7 @@ export async function bootstrap(): Promise<void> {
   const notificationsService = app.get(NotificationsService);
 
   const rabbitUrl = configService.get<string>('RABBITMQ_URL', 'amqp://guest:guest@localhost:5672');
-  const exchange = configService.get<string>('RABBITMQ_EXCHANGE', 'commerce.events');
+  const exchange = configService.get<string>('RABBITMQ_EXCHANGE', 'alnjoom-telecom.events');
   const maxRetries = configService.get<number>('NOTIFICATIONS_MAX_RETRIES', 3);
   const retryDelayMs = configService.get<number>('NOTIFICATIONS_RETRY_DELAY_MS', 10_000);
   const connectMaxAttempts = Math.max(
