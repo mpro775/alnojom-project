@@ -2,7 +2,7 @@ ALTER TABLE customers
   ADD COLUMN IF NOT EXISTS gender TEXT CHECK (gender IN ('male', 'female'));
 
 ALTER TABLE customers
-  ADD COLUMN IF NOT EXISTS country TEXT NOT NULL DEFAULT 'اليمن';
+  ADD COLUMN IF NOT EXISTS country TEXT NOT NULL DEFAULT 'السعودية';
 
 ALTER TABLE customers
   ADD COLUMN IF NOT EXISTS city TEXT;

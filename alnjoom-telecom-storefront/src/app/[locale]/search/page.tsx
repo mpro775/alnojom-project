@@ -4,8 +4,13 @@ import { Search } from "lucide-react";
 import { CatalogPage } from "@/features/catalog/catalog-page";
 import { getFiltersSafe, getProducts, getStoreConfigSafe, type SearchRecord } from "@/lib/api/storefront";
 import { isLocale, localePath } from "@/lib/i18n/locales";
+import { localizedAlternates } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = { title: "البحث", robots: { index: false, follow: true } };
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  const alternates = isLocale(locale) ? localizedAlternates(await getStoreConfigSafe(), locale, "/search") : undefined;
+  return { title: locale === "ar" ? "البحث" : "Search", robots: { index: false, follow: true }, alternates };
+}
 
 export default async function SearchPage({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<SearchRecord> }) {
   const [{ locale: raw }, query] = await Promise.all([params, searchParams]);

@@ -23,31 +23,22 @@ export const STORE_TIMEZONES = [
   'UTC',
 ] as const;
 
-export const DEFAULT_STORE_COUNTRY = 'اليمن';
+export const DEFAULT_STORE_COUNTRY = 'السعودية';
 
-export const YEMEN_GOVERNORATES = [
-  'أمانة العاصمة',
-  'عدن',
-  'تعز',
-  'لحج',
-  'أبين',
-  'الضالع',
-  'إب',
-  'الحديدة',
-  'حجة',
-  'المحويت',
-  'ريمة',
-  'ذمار',
-  'صنعاء',
-  'عمران',
-  'صعدة',
+export const SAUDI_REGIONS = [
+  'الرياض',
+  'مكة المكرمة',
+  'المدينة المنورة',
+  'القصيم',
+  'الشرقية',
+  'عسير',
+  'تبوك',
+  'حائل',
+  'الحدود الشمالية',
+  'جازان',
+  'نجران',
+  'الباحة',
   'الجوف',
-  'مأرب',
-  'شبوة',
-  'حضرموت',
-  'المهرة',
-  'سقطرى',
-  'البيضاء',
 ] as const;
 
 export const STORE_WORKING_DAYS = [

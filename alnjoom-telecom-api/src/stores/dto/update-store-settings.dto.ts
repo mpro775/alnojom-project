@@ -25,7 +25,7 @@ import {
   STOCK_DEDUCTION_TIMINGS,
   TAX_PRICE_MODES,
   WAREHOUSE_SELECTION_MODES,
-  YEMEN_GOVERNORATES,
+  SAUDI_REGIONS,
 } from '../constants/store-settings.constants';
 
 class WorkingHoursSlotDto {
@@ -266,7 +266,7 @@ export class UpdateStoreSettingsDto {
   @IsOptional()
   @IsString()
   @MaxLength(80)
-  @IsIn(YEMEN_GOVERNORATES, { message: 'اختر محافظة يمنية صحيحة' })
+  @IsIn(SAUDI_REGIONS, { message: 'اختر منطقة سعودية صحيحة' })
   city?: string;
 
   @IsOptional()

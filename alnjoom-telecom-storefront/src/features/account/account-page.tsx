@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell, CircleUserRound, Heart, LayoutDashboard, LogOut, MapPin, MessageSquare, Package, Plus, Star, Trash2, WalletCards } from "lucide-react";
+import { Bell, CircleUserRound, Heart, LayoutDashboard, LogOut, MapPin, MessageSquare, Package, Pencil, Plus, Star, Trash2, WalletCards } from "lucide-react";
 import type { Address, Customer, CustomerOrder, Locale, LoyaltyLedgerEntry, LoyaltyWallet, NotificationItem, PageResult, Review, SupportMessage, SupportTicket, WishlistItem } from "@/lib/api/contracts";
 import { apiClient } from "@/lib/api/client";
 import { customerEndpoints, toAuthBff, toCustomerBff } from "@/lib/api/endpoints";
@@ -99,8 +99,25 @@ function Addresses({ locale }: { locale: Locale }) {
 
 function Orders({ locale }: { locale: Locale }) {
   const [data, setData] = useState<{ orders: CustomerOrder[]; total: number } | null>(null); const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   useEffect(() => { apiClient<{ orders: CustomerOrder[]; total: number }>(`${toCustomerBff(customerEndpoints.orders)}?limit=20&offset=0`).then(setData).catch((reason) => setError(userSafeError(reason, locale))); }, [locale]);
-  return <Resource title={locale === "ar" ? "الطلبات" : "Orders"} error={error} loading={!data}>{data?.orders.length ? <div className="space-y-3">{data.orders.map((order) => <article key={order.id} className="surface-card grid gap-3 p-4 sm:grid-cols-4"><div><span className="text-xs text-muted">{locale === "ar" ? "الطلب" : "Order"}</span><strong className="block" dir="ltr">{order.orderCode}</strong></div><div><span className="text-xs text-muted">{locale === "ar" ? "الحالة" : "Status"}</span><strong className="block">{order.status}</strong></div><div><span className="text-xs text-muted">{locale === "ar" ? "الإجمالي" : "Total"}</span><strong className="block" dir="ltr">{formatMoney(order.total, order.currencyCode, locale)}</strong></div><ButtonLink variant="secondary" href={localePath(locale, `/track-order/${encodeURIComponent(order.orderCode)}`)}>{locale === "ar" ? "تتبع" : "Track"}</ButtonLink></article>)}</div> : data ? <EmptyState title={locale === "ar" ? "لا توجد طلبات" : "No orders"} /> : null}</Resource>;
+
+  const loadMore = async () => {
+    if (!data || busy) return;
+    setBusy(true);
+    try {
+      const next = await apiClient<{ orders: CustomerOrder[]; total: number }>(`${toCustomerBff(customerEndpoints.orders)}?limit=20&offset=${data.orders.length}`);
+      setData({ orders: [...data.orders, ...next.orders], total: next.total });
+    } catch (reason) {
+      setError(userSafeError(reason, locale));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const hasMore = data && data.orders.length < data.total;
+
+  return <Resource title={locale === "ar" ? "الطلبات" : "Orders"} error={error} loading={!data}>{data?.orders.length ? <div className="space-y-3">{data.orders.map((order) => <article key={order.id} className="surface-card grid gap-3 p-4 sm:grid-cols-4"><div><span className="text-xs text-muted">{locale === "ar" ? "الطلب" : "Order"}</span><strong className="block" dir="ltr">{order.orderCode}</strong></div><div><span className="text-xs text-muted">{locale === "ar" ? "الحالة" : "Status"}</span><strong className="block">{order.status}</strong></div><div><span className="text-xs text-muted">{locale === "ar" ? "الإجمالي" : "Total"}</span><strong className="block" dir="ltr">{formatMoney(order.total, order.currencyCode, locale)}</strong></div><ButtonLink variant="secondary" href={localePath(locale, `/track-order/${encodeURIComponent(order.orderCode)}`)}>{locale === "ar" ? "تتبع" : "Track"}</ButtonLink></article>)}{hasMore ? <Button variant="secondary" className="w-full" disabled={busy} onClick={loadMore}>{locale === "ar" ? "تحميل المزيد" : "Load more"}</Button> : null}</div> : data ? <EmptyState title={locale === "ar" ? "لا توجد طلبات" : "No orders"} /> : null}</Resource>;
 }
 
 function Wishlist({ locale }: { locale: Locale }) {
@@ -110,9 +127,39 @@ function Wishlist({ locale }: { locale: Locale }) {
 }
 
 function Reviews({ locale }: { locale: Locale }) {
-  const [items, setItems] = useState<Review[] | null>(null); const { show } = useToast(); const load = useCallback(() => apiClient<Review[]>(toCustomerBff(customerEndpoints.reviews)).then(setItems), []);
+  const [items, setItems] = useState<Review[] | null>(null); const [editingId, setEditingId] = useState<string | null>(null); const { show } = useToast(); const load = useCallback(() => apiClient<Review[]>(toCustomerBff(customerEndpoints.reviews)).then(setItems), []);
   useEffect(() => { void load().catch((error) => show(userSafeError(error, locale), "error")); }, [load, locale, show]);
-  return <Resource title={locale === "ar" ? "تقييماتي" : "My reviews"} loading={!items}>{items?.length ? <div className="space-y-3">{items.map((review) => <article key={review.id} className="surface-card p-4"><div className="flex items-start justify-between"><div><strong>{review.productTitle ?? review.productId}</strong><p className="mt-1 text-accent">{"★".repeat(review.rating)}</p><span className="mt-2 inline-block text-xs text-muted">{review.moderationStatus}</span></div><button className="grid size-10 place-items-center text-danger" onClick={async () => { try { await apiClient(toCustomerBff(customerEndpoints.review(review.id)), { method: "DELETE" }); await load(); } catch (error) { show(userSafeError(error, locale), "error"); } }}><Trash2 className="size-4" /></button></div>{review.comment ? <p className="mt-3 text-muted">{review.comment}</p> : null}</article>)}</div> : items ? <EmptyState title={locale === "ar" ? "لم تكتب تقييمات بعد" : "You have not written reviews yet"} /> : null}</Resource>;
+
+  const renderEditForm = (review: Review) => {
+    return (
+      <form className="mt-4 grid gap-3 border-t border-line pt-4" onSubmit={async (event) => {
+        event.preventDefault(); const form = new FormData(event.currentTarget);
+        try {
+          await apiClient(toCustomerBff(customerEndpoints.review(review.id)), {
+            method: "PATCH",
+            body: JSON.stringify({ rating: Number(form.get("rating")), comment: String(form.get("comment") ?? "").trim() || undefined })
+          });
+          setEditingId(null); await load();
+          show(locale === "ar" ? "تم تحديث التقييم" : "Review updated", "success");
+        } catch (error) { show(userSafeError(error, locale), "error"); }
+      }}>
+        <label className="text-sm font-bold">{locale === "ar" ? "التقييم" : "Rating"}
+          <select required name="rating" defaultValue={review.rating} className="field mt-1">
+            {[5,4,3,2,1].map((r) => <option key={r} value={r}>{r} / 5</option>)}
+          </select>
+        </label>
+        <label className="text-sm font-bold">{locale === "ar" ? "تعليقك" : "Comment"}
+          <textarea name="comment" defaultValue={review.comment ?? ""} maxLength={1000} className="field mt-1 min-h-20" />
+        </label>
+        <div className="flex gap-2">
+          <Button>{locale === "ar" ? "حفظ" : "Save"}</Button>
+          <Button type="button" variant="secondary" onClick={() => setEditingId(null)}>{locale === "ar" ? "إلغاء" : "Cancel"}</Button>
+        </div>
+      </form>
+    );
+  };
+
+  return <Resource title={locale === "ar" ? "تقييماتي" : "My reviews"} loading={!items}>{items?.length ? <div className="space-y-3">{items.map((review) => <article key={review.id} className="surface-card p-4"><div className="flex items-start justify-between"><div><strong>{review.productTitle ?? review.productId}</strong><p className="mt-1 text-accent">{"★".repeat(review.rating)}</p><span className="mt-2 inline-block text-xs text-muted">{review.moderationStatus}</span></div><div className="flex items-center gap-1"><button className="grid size-10 place-items-center text-muted hover:text-brand" onClick={() => setEditingId(review.id)} aria-label={locale === "ar" ? "تعديل" : "Edit"}><Pencil className="size-4" /></button><button className="grid size-10 place-items-center text-danger" onClick={async () => { try { await apiClient(toCustomerBff(customerEndpoints.review(review.id)), { method: "DELETE" }); await load(); } catch (error) { show(userSafeError(error, locale), "error"); } }} aria-label={locale === "ar" ? "حذف" : "Delete"}><Trash2 className="size-4" /></button></div></div>{editingId === review.id ? renderEditForm(review) : review.comment ? <p className="mt-3 text-muted">{review.comment}</p> : null}</article>)}</div> : items ? <EmptyState title={locale === "ar" ? "لم تكتب تقييمات بعد" : "You have not written reviews yet"} /> : null}</Resource>;
 }
 
 function Loyalty({ locale }: { locale: Locale }) {
@@ -122,15 +169,52 @@ function Loyalty({ locale }: { locale: Locale }) {
 }
 
 function Notifications({ locale }: { locale: Locale }) {
-  const [data, setData] = useState<PageResult<NotificationItem> | null>(null); const { show } = useToast(); const load = useCallback(() => apiClient<PageResult<NotificationItem>>(`${toCustomerBff(customerEndpoints.notifications)}?page=1&limit=20`).then(setData), []);
+  const [data, setData] = useState<PageResult<NotificationItem> | null>(null); const [page, setPage] = useState(1); const [busy, setBusy] = useState(false); const { show } = useToast(); const load = useCallback(() => apiClient<PageResult<NotificationItem>>(`${toCustomerBff(customerEndpoints.notifications)}?page=1&limit=20`).then(setData), []);
   useEffect(() => { void load().catch((error) => show(userSafeError(error, locale), "error")); }, [load, locale, show]);
-  return <Resource title={locale === "ar" ? "الإشعارات" : "Notifications"} loading={!data} action={<Button variant="secondary" onClick={async () => { await apiClient(toCustomerBff(customerEndpoints.notificationsReadAll), { method: "PATCH" }); await load(); }}>{locale === "ar" ? "تحديد الكل كمقروء" : "Mark all read"}</Button>}>{data?.items.length ? <div className="space-y-3">{data.items.map((item) => <button key={item.id} className={`surface-card block w-full p-4 text-start ${item.status === "unread" ? "border-brand" : ""}`} onClick={async () => { if (item.status === "unread") { await apiClient(toCustomerBff(customerEndpoints.notificationRead(item.id)), { method: "PATCH" }); await load(); } }}><strong>{item.title}</strong><p className="mt-2 text-sm leading-7 text-muted">{item.body}</p><time className="mt-2 block text-xs text-muted">{formatDate(item.createdAt, locale)}</time></button>)}</div> : data ? <EmptyState title={locale === "ar" ? "لا توجد إشعارات" : "No notifications"} /> : null}</Resource>;
+
+  const loadMore = async () => {
+    if (!data || busy) return;
+    setBusy(true);
+    try {
+      const nextPage = page + 1;
+      const next = await apiClient<PageResult<NotificationItem>>(`${toCustomerBff(customerEndpoints.notifications)}?page=${nextPage}&limit=20`);
+      setData({ ...next, items: [...data.items, ...next.items] });
+      setPage(nextPage);
+    } catch (error) {
+      show(userSafeError(error, locale), "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const hasMore = data && data.items.length < data.total;
+
+  return <Resource title={locale === "ar" ? "الإشعارات" : "Notifications"} loading={!data} action={<Button variant="secondary" onClick={async () => { await apiClient(toCustomerBff(customerEndpoints.notificationsReadAll), { method: "PATCH" }); await load(); }}>{locale === "ar" ? "تحديد الكل كمقروء" : "Mark all read"}</Button>}>{data?.items.length ? <div className="space-y-3">{data.items.map((item) => <button key={item.id} className={`surface-card block w-full p-4 text-start ${item.status === "unread" ? "border-brand" : ""}`} onClick={async () => { if (item.status === "unread") { await apiClient(toCustomerBff(customerEndpoints.notificationRead(item.id)), { method: "PATCH" }); await load(); } }}><strong>{item.title}</strong><p className="mt-2 text-sm leading-7 text-muted">{item.body}</p><time className="mt-2 block text-xs text-muted">{formatDate(item.createdAt, locale)}</time></button>)}{hasMore ? <Button variant="secondary" className="w-full" disabled={busy} onClick={loadMore}>{locale === "ar" ? "تحميل المزيد" : "Load more"}</Button> : null}</div> : data ? <EmptyState title={locale === "ar" ? "لا توجد إشعارات" : "No notifications"} /> : null}</Resource>;
 }
 
 function Support({ locale }: { locale: Locale }) {
   const [data, setData] = useState<PageResult<SupportTicket> | null>(null); const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1); const [busy, setBusy] = useState(false);
   useEffect(() => { apiClient<PageResult<SupportTicket>>(`${toCustomerBff(customerEndpoints.supportTickets)}?page=1&limit=20`).then(setData).catch((reason) => setError(userSafeError(reason, locale))); }, [locale]);
-  return <Resource title={locale === "ar" ? "تذاكر الدعم" : "Support tickets"} loading={!data} error={error} action={<ButtonLink href={localePath(locale, "/account/support/new")}><Plus className="size-4" />{locale === "ar" ? "تذكرة جديدة" : "New ticket"}</ButtonLink>}>{data?.items.length ? <div className="space-y-3">{data.items.map((ticket) => <Link key={ticket.id} className="surface-card block p-4 hover:border-brand" href={localePath(locale, `/account/support/${ticket.id}`)}><div className="flex items-center justify-between gap-3"><strong>{ticket.subject}</strong><span className="rounded bg-surface px-2 py-1 text-xs">{ticket.status}</span></div><p className="mt-2 text-xs text-muted">{formatDate(ticket.createdAt, locale)}</p></Link>)}</div> : data ? <EmptyState title={locale === "ar" ? "لا توجد تذاكر" : "No support tickets"} /> : null}</Resource>;
+
+  const loadMore = async () => {
+    if (!data || busy) return;
+    setBusy(true);
+    try {
+      const nextPage = page + 1;
+      const next = await apiClient<PageResult<SupportTicket>>(`${toCustomerBff(customerEndpoints.supportTickets)}?page=${nextPage}&limit=20`);
+      setData({ ...next, items: [...data.items, ...next.items] });
+      setPage(nextPage);
+    } catch (error) {
+      setError(userSafeError(error, locale));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const hasMore = data && data.items.length < data.total;
+
+  return <Resource title={locale === "ar" ? "تذاكر الدعم" : "Support tickets"} loading={!data} error={error} action={<ButtonLink href={localePath(locale, "/account/support/new")}><Plus className="size-4" />{locale === "ar" ? "تذكرة جديدة" : "New ticket"}</ButtonLink>}>{data?.items.length ? <div className="space-y-3">{data.items.map((ticket) => <Link key={ticket.id} className="surface-card block p-4 hover:border-brand" href={localePath(locale, `/account/support/${ticket.id}`)}><div className="flex items-center justify-between gap-3"><strong>{ticket.subject}</strong><span className="rounded bg-surface px-2 py-1 text-xs">{ticket.status}</span></div><p className="mt-2 text-xs text-muted">{formatDate(ticket.createdAt, locale)}</p></Link>)}{hasMore ? <Button variant="secondary" className="w-full" disabled={busy} onClick={loadMore}>{locale === "ar" ? "تحميل المزيد" : "Load more"}</Button> : null}</div> : data ? <EmptyState title={locale === "ar" ? "لا توجد تذاكر" : "No support tickets"} /> : null}</Resource>;
 }
 
 function NewTicket({ locale }: { locale: Locale }) {

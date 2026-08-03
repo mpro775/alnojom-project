@@ -167,7 +167,7 @@ export interface ManagedCustomerDetailsResponse {
 
 @Injectable()
 export class CustomersService {
-  private static readonly DEFAULT_COUNTRY = 'اليمن';
+  private static readonly DEFAULT_COUNTRY = 'السعودية';
 
   constructor(
     private readonly customersRepository: CustomersRepository,

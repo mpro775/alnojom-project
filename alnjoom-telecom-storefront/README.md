@@ -1,36 +1,97 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Alnjoom Telecom Storefront
 
-## Getting Started
+This is the Next.js storefront application for Alnjoom Telecom, built with the App Router (Next.js 16) and React 19. It serves as the customer-facing e-commerce interface.
 
-First, run the development server:
+## Architecture & BFF Notes
+
+This storefront utilizes the Next.js App Router and Server Components as a pseudo Backend-for-Frontend (BFF). 
+- It communicates directly with the primary backend API (`BACKEND_API_URL`).
+- Data fetching and API interactions are mostly handled on the server side using Server Components, Next.js Server Actions, and Route Handlers, hiding secrets from the browser client.
+- Type-safe API contracts are generated from the backend's OpenAPI specifications, located in `src/lib/api/types.generated.ts` and managed through `src/lib/api/contracts`.
+
+## Environment Variables
+
+Copy `.env.example` to `.env.local` or `.env` to configure your environment variables:
+
+```bash
+cp .env.example .env.local
+```
+
+Key variables:
+- `NEXT_PUBLIC_APP_URL`: Public canonical storefront URL used for metadata, sitemap, and redirects.
+- `BACKEND_API_URL`: Server-only Alnjoom API origin. Do not prefix with `NEXT_PUBLIC_`.
+- `NEXT_PUBLIC_MEDIA_HOST`: Exact public media origin allowed by `next/image` (host or full origin).
+
+## Development
+
+First, install the dependencies:
+
+```bash
+npm install
+```
+
+Then, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## API Generation
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+To generate and update the TypeScript types from the backend OpenAPI schema, make sure the backend schema is available at `../docs/api/openapi.json` and run:
 
-## Learn More
+```bash
+npm run api:generate
+```
 
-To learn more about Next.js, take a look at the following resources:
+You can verify the types and contracts using:
+```bash
+npm run api:check
+npm run audit:contracts
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Testing
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The project is equipped with unit and End-to-End (E2E) testing.
 
-## Deploy on Vercel
+- **Unit/Integration tests** (Vitest):
+  ```bash
+  npm run test
+  ```
+- **Test Coverage**:
+  ```bash
+  npm run test:coverage
+  ```
+- **E2E tests** (Playwright):
+  ```bash
+  npm run test:e2e
+  ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Build
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+To build the application for production:
+
+```bash
+npm run build
+```
+
+This will create an optimized production build in the `.next` directory. The project is configured with `output: "standalone"` to bundle all required dependencies in a lightweight output for Docker deployments.
+
+## Docker
+
+You can build and run the application using Docker. The provided `Dockerfile` uses a multi-stage build optimized for production.
+
+```bash
+# Build the image
+docker build -t alnjoom-storefront .
+
+# Run the container
+docker run -p 3000:3000 --env-file .env alnjoom-storefront
+```
+
+## Deployment / Coolify
+
+This project is optimized for deployment via **Coolify** (or similar container orchestration platforms) utilizing the Dockerfile deployment strategy. 
+Since `output: "standalone"` is enabled in `next.config.ts`, Coolify can effortlessly build and run the included `Dockerfile`, producing a very lightweight Node.js Alpine container with minimal footprint.

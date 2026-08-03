@@ -19,9 +19,9 @@ VALUES (
   'nojoom-telecom',
   NULL,
   NULL,
-  'اليمن',
-  'YER',
-  'Asia/Aden',
+  'السعودية',
+  'SAR',
+  'Asia/Riyadh',
   '{"seeded": true, "singleStoreCore": true}'::jsonb
 )
 ON CONFLICT (id) DO UPDATE

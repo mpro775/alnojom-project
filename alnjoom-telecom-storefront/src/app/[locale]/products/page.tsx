@@ -3,8 +3,13 @@ import type { Metadata } from "next";
 import { CatalogPage } from "@/features/catalog/catalog-page";
 import { getFiltersSafe, getProducts, getStoreConfigSafe, type SearchRecord } from "@/lib/api/storefront";
 import { isLocale } from "@/lib/i18n/locales";
+import { localizedAlternates } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = { title: "المنتجات", robots: { index: true, follow: true } };
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  const alternates = isLocale(locale) ? localizedAlternates(await getStoreConfigSafe(), locale, "/products") : undefined;
+  return { title: locale === "ar" ? "المنتجات" : "Products", robots: { index: true, follow: true }, alternates };
+}
 
 export default async function ProductsPage({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<SearchRecord> }) {
   const [{ locale: raw }, query] = await Promise.all([params, searchParams]);

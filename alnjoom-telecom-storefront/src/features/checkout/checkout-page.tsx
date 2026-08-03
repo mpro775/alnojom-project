@@ -39,7 +39,7 @@ export function CheckoutPage({ locale, config, fulfillment, paymentMethods }: { 
   const [receiptId, setReceiptId] = useState<string | null>(null);
   const [receiptProgress, setReceiptProgress] = useState<number | null>(null);
   const [receiptError, setReceiptError] = useState<string | null>(null);
-  const currency = cart?.currencyCode ?? config?.storeSettings.currencyCode ?? "YER";
+  const currency = cart?.currencyCode ?? config?.storeSettings.currencyCode ?? "";
   const allowGuest = config?.storeSettings.orderSettings.allowGuestCheckout ?? false;
   const selectedMethod = paymentMethods.find((method) => method.id === selectedPayment) ?? null;
   const fulfillmentSelection = useMemo(() => parseFulfillment(selectedFulfillment), [selectedFulfillment]);
@@ -121,7 +121,6 @@ export function CheckoutPage({ locale, config, fulfillment, paymentMethods }: { 
       clearCheckoutKey(window.sessionStorage);
       router.replace(localePath(locale, "/order/success"));
     } catch (error) {
-      if (error instanceof ApiError && error.status !== null) clearCheckoutKey(window.sessionStorage);
       setQuoteError(userSafeError(error, locale));
     } finally { setBusy(false); }
   }

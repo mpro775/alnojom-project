@@ -46,7 +46,7 @@ export default async function ProductRoute({ params }: Props) {
     description: raw === "ar" ? product.shortDescriptionAr ?? product.descriptionAr ?? product.description : product.shortDescriptionEn ?? product.descriptionEn ?? product.description,
     sku: selected?.sku,
     ...(product.brand ? { brand: { "@type": "Brand", name: product.brand } } : {}),
-    ...(selected ? { offers: { "@type": "Offer", price: selected.price, priceCurrency: config?.storeSettings.currencyCode ?? "YER", availability: product.stockUnlimited || selected.stockQuantity > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock" } } : {}),
+    ...(selected ? { offers: { "@type": "Offer", price: selected.price, priceCurrency: config?.storeSettings.currencyCode ?? "", availability: product.stockUnlimited || selected.stockQuantity > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock" } } : {}),
     ...(product.ratingCount > 0 ? { aggregateRating: { "@type": "AggregateRating", ratingValue: product.ratingAvg, reviewCount: product.ratingCount } } : {}),
   };
   return <><ProductPage locale={raw} product={product} config={config} category={category} reviews={reviews} questions={questions} related={related} /><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} /></>;

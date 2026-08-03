@@ -13,7 +13,7 @@ import { MediaImage } from "@/components/ui/media-image";
 export function HomePage({ locale, config, categories, featured, latest }: { locale: Locale; config: StoreConfig | null; categories: Category[]; featured: ProductList; latest: ProductList }) {
   const content = t(locale);
   const roots = categories.filter((category) => !category.parentId).slice(0, 8);
-  const currency = config?.storeSettings.currencyCode ?? "YER";
+  const currency = config?.storeSettings.currencyCode ?? "";
   const spotlight = featured.items[0] ?? latest.items[0];
   const Arrow = locale === "ar" ? ArrowLeft : ArrowRight;
   return (

@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Alert } from "@/components/ui/alert";
 
 export function CatalogPage({ locale, title, description, result, filters, config, searchParams, error = false }: { locale: Locale; title: string; description?: string; result: ProductList; filters: SmartFilter[]; config: StoreConfig | null; searchParams: SearchRecord; error?: boolean }) {
-  const currency = config?.storeSettings.currencyCode ?? "YER";
+  const currency = config?.storeSettings.currencyCode ?? "";
   return (
     <main id="main-content" className="container-shell section-space">
       <header className="mb-8"><h1 className="text-3xl font-black sm:text-4xl">{title}</h1>{description ? <p className="mt-3 max-w-3xl leading-8 text-muted">{description}</p> : null}<p className="mt-3 text-sm text-muted">{locale === "ar" ? `${result.total} منتج` : `${result.total} products`}</p></header>

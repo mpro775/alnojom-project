@@ -20,7 +20,7 @@ import {
   STOCK_DEDUCTION_TIMINGS,
   TAX_PRICE_MODES,
   WAREHOUSE_SELECTION_MODES,
-  YEMEN_GOVERNORATES,
+  SAUDI_REGIONS,
 } from './constants/store-settings.constants';
 import type { UpdateStoreSettingsDto } from './dto/update-store-settings.dto';
 import {
@@ -169,7 +169,7 @@ export class StoresService {
       defaultCountry: DEFAULT_STORE_COUNTRY,
       currencies: STORE_CURRENCY_CODES,
       timezones: STORE_TIMEZONES,
-      governorates: YEMEN_GOVERNORATES,
+      governorates: SAUDI_REGIONS,
       workingDays: STORE_WORKING_DAYS,
       socialPlatforms: STORE_SOCIAL_LINK_KEYS,
     };
@@ -812,11 +812,11 @@ export class StoresService {
       return DEFAULT_STORE_COUNTRY;
     }
 
-    if (lower === 'ye' || lower === 'yemen' || normalized === DEFAULT_STORE_COUNTRY) {
+    if (lower === 'sa' || lower === 'saudi arabia' || normalized === DEFAULT_STORE_COUNTRY) {
       return DEFAULT_STORE_COUNTRY;
     }
 
-    throw new BadRequestException('الدولة يجب أن تكون اليمن');
+    throw new BadRequestException('الدولة يجب أن تكون السعودية');
   }
 
   private isDamagedText(value: string): boolean {
