@@ -294,6 +294,11 @@ export class AbandonedCartsService {
     cartId: string;
     token: string;
   }): string {
+    const storefrontBase = this.configService.get<string>('STOREFRONT_PUBLIC_BASE_URL', '');
+    if (storefrontBase) {
+      const base = storefrontBase.replace(/\/$/, '');
+      return `${base}/recover-cart?cartId=${encodeURIComponent(input.cartId)}&recoveryToken=${encodeURIComponent(input.token)}`;
+    }
     const appBase = this.configService
       .get<string>('MOBILE_APP_DEEP_LINK_BASE_URL', 'myapp://')
       .replace(/\/$/, '');

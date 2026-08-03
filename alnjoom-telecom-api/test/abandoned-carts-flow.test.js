@@ -158,6 +158,7 @@ describe('abandoned carts recovery flow', () => {
           ABANDONED_CART_REMINDER_BATCH_SIZE: 100,
           API_PUBLIC_BASE_URL: 'http://localhost:3000',
           MOBILE_APP_DEEP_LINK_BASE_URL: 'myapp://',
+          STOREFRONT_PUBLIC_BASE_URL: 'https://store.example.com',
         };
         return key in values ? values[key] : fallback;
       },
@@ -190,7 +191,8 @@ describe('abandoned carts recovery flow', () => {
 
     const redirect = await service.resolveRecoveryRedirect(token);
     assert.equal(redirect.cartId, cartId);
-    assert.equal(redirect.redirectUrl.includes('/checkout?cartId='), true);
+    assert.equal(redirect.redirectUrl.includes('/recover-cart?cartId='), true);
+    assert.equal(redirect.redirectUrl.startsWith('https://store.example.com/'), true);
     assert.equal(db.reminders[1].clicked_at instanceof Date, true);
     assert.equal(db.cart.status, 'open');
 
